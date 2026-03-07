@@ -9,6 +9,7 @@ import Evidence from "@/components/Evidence";
 import SocialProof from "@/components/SocialProof";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
+import SendCalculator from "@/components/SendCalculator";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
         <FinalCTA />
       </main>
       <Footer />
+      <SendCalculator />
     </>
   );
 }

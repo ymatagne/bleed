@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getMidMarketRates } from "@/lib/fx-rates";
 
 const MISTRAL_OCR_API = "https://api.mistral.ai/v1/ocr";
 const MISTRAL_CHAT_API = "https://api.mistral.ai/v1/chat/completions";
@@ -91,6 +92,18 @@ export async function POST(req: NextRequest) {
 
     const combinedText = extractedTexts.join("\n\n");
     const isMultiple = extractedTexts.length > 1;
+
+    // Fetch live mid-market rates
+    let ratesContext = "";
+    try {
+      const rates = await getMidMarketRates();
+      const usdCad = (1 / rates.USD).toFixed(4);
+      const eurCad = (1 / rates.EUR).toFixed(4);
+      const gbpCad = (1 / rates.GBP).toFixed(4);
+      ratesContext = `\n\nUse these REAL mid-market rates for your analysis: USD/CAD: ${usdCad}, EUR/CAD: ${eurCad}, GBP/CAD: ${gbpCad} (as of today). Compare the bank's rates against these to calculate exact markup percentages. Do NOT estimate mid-market rates — use these exact values.`;
+    } catch (e) {
+      console.warn("Could not fetch live FX rates, AI will estimate:", e);
+    }
 
     // Step 2: Full banking audit
     const analysisRes = await fetch(MISTRAL_CHAT_API, {
@@ -206,7 +219,7 @@ Be thorough:
 - If you see domestic payments that could be faster/cheaper, recommend alternatives
 - If you see patterns (e.g. regular USD payments) suggest opening a Loop USD account
 - Even for simple statements, find what the bank is charging and what Loop would save
-${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing costs, seasonal spikes)" : ""}`,
+${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing costs, seasonal spikes)" : ""}${ratesContext}`,
           },
         ],
         max_tokens: 6000,

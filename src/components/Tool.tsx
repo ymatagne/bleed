@@ -343,7 +343,7 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
       </div>
 
       {/* Projection Charts */}
-      <ProjectionCharts summary={data.summary} />
+      <ProjectionCharts summary={data.summary} plans={data.planComparison} />
 
       {/* Findings */}
       <div className="bg-white border border-border rounded-xl overflow-hidden">

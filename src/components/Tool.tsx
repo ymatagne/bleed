@@ -2,10 +2,13 @@
 
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
+import EmailGate from "./EmailGate";
+import ReferralChallenge from "./ReferralChallenge";
+import { useSignupModal } from "./SignupModalProvider";
 
 interface Finding {
   category: string;
@@ -70,6 +73,8 @@ function ScanTab() {
   const [progress, setProgress] = useState<string>("");
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [leadInfo, setLeadInfo] = useState<{ name: string; email: string; company: string } | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -107,7 +112,25 @@ function ScanTab() {
     }
   };
 
-  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); }} />;
+  if (result && !unlocked) {
+    const nothingFound = result.findings.length === 0 && result.summary.totalFeesFound === 0;
+    if (nothingFound) {
+      // Skip email gate for clean statements
+      return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); setUnlocked(false); }} />;
+    }
+    return (
+      <EmailGate
+        issuesCount={result.findings.length}
+        annualProjection={result.summary.annualProjection}
+        onUnlock={(lead) => {
+          setLeadInfo(lead);
+          setUnlocked(true);
+        }}
+      />
+    );
+  }
+
+  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); setUnlocked(false); }} leadEmail={leadInfo?.email} />;
 
   return (
     <div className="space-y-6">
@@ -259,7 +282,31 @@ function ShareButtons({ data }: { data: AuditResult }) {
   );
 }
 
-function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
+function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset: () => void; leadEmail?: string }) {
+  const { openSignup } = useSignupModal();
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bleed-audit-report-${new Date().toISOString().slice(0, 10)}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    } finally {
+      setDownloading(false);
+    }
+  };
   const nothingFound = data.findings.length === 0 && data.summary.totalFeesFound === 0 && data.recommendations.length === 0;
 
   if (nothingFound) {
@@ -467,18 +514,16 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
                   </div>
                 </div>
 
-                <a
-                  href="https://bankonloop.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl transition-all text-sm ${
+                <button
+                  onClick={openSignup}
+                  className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl transition-all text-sm cursor-pointer ${
                     isRec
                       ? "bg-[#C4F6C6] text-[#004639] hover:brightness-110"
                       : "bg-loop/10 text-loop hover:bg-loop/20"
                   }`}
                 >
                   Get Started <ArrowRight className="w-4 h-4" />
-                </a>
+                </button>
               </motion.div>
             );
           })}
@@ -508,8 +553,33 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
         })()}
       </div>
 
+      {/* Download PDF */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button
+          onClick={downloadPDF}
+          disabled={downloading}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-loop hover:bg-loop-dark disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
+        >
+          {downloading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Download className="w-5 h-5" />
+          )}
+          Download PDF Report
+        </button>
+        <button
+          onClick={openSignup}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-[#C4F6C6] text-[#004639] font-semibold rounded-xl hover:brightness-110 transition-all"
+        >
+          Open Free Loop Account <ArrowRight className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Share Buttons */}
       <ShareButtons data={data} />
+
+      {/* Referral Challenge */}
+      <ReferralChallenge annualProjection={data.summary.annualProjection} bankName={data.bankName} />
     </motion.div>
   );
 }
@@ -521,6 +591,7 @@ const loopPlans = [
 ];
 
 function CalculatorTab() {
+  const { openSignup } = useSignupModal();
   const [revenue, setRevenue] = useState(50000);
   const [intlPercent, setIntlPercent] = useState(30);
   const [bankIdx, setBankIdx] = useState(0);
@@ -656,15 +727,13 @@ function CalculatorTab() {
       </div>
 
       <div className="text-center">
-        <a
-          href="https://bankonloop.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg"
+        <button
+          onClick={openSignup}
+          className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg cursor-pointer"
         >
           Start saving with Loop
           <ArrowRight className="w-5 h-5" />
-        </a>
+        </button>
       </div>
     </div>
   );

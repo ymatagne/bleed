@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+import { SignupModalProvider } from "@/components/SignupModalProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,7 +58,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <SignupModalProvider>{children}</SignupModalProvider>
+      </body>
     </html>
   );
 }

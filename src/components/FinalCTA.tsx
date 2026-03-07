@@ -3,10 +3,12 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { ArrowRight } from "lucide-react";
+import { useSignupModal } from "./SignupModalProvider";
 
 export default function FinalCTA() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const { openSignup } = useSignupModal();
 
   return (
     <section ref={ref} className="py-32 px-6 relative overflow-hidden bg-loop-deep">
@@ -26,15 +28,13 @@ export default function FinalCTA() {
           Join thousands of Canadian businesses that stopped overpaying their bank on foreign exchange. Setup takes 5 minutes.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="https://bankonloop.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group px-8 py-4 bg-accent-green text-loop-deep font-semibold rounded-xl transition-all duration-300 hover:brightness-110 text-lg inline-flex items-center gap-2"
+          <button
+            onClick={openSignup}
+            className="group px-8 py-4 bg-accent-green text-loop-deep font-semibold rounded-xl transition-all duration-300 hover:brightness-110 text-lg inline-flex items-center gap-2 cursor-pointer"
           >
             Get Started Free
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </a>
+          </button>
           <a
             href="#tool"
             className="px-8 py-4 border border-white/20 hover:border-white/40 text-white/80 hover:text-white rounded-xl transition-all duration-300 text-lg"

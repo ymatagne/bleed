@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSignupModal } from "./SignupModalProvider";
 
 /* ── Currency metadata ── */
 
@@ -135,6 +136,7 @@ function rowBg(kind: Provider["kind"]): string {
 /* ── Component ── */
 
 export default function SendCalculator() {
+  const { openSignup } = useSignupModal();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("10000");
   const [currency, setCurrency] = useState("USD");
@@ -376,14 +378,12 @@ export default function SendCalculator() {
 
                     {/* CTA */}
                     <div className="mt-5 text-center">
-                      <a
-                        href="https://bankonloop.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={openSignup}
                         className="inline-flex items-center gap-2 bg-[#004639] hover:bg-[#01251e] text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
                       >
                         Send with Loop →
-                      </a>
+                      </button>
                     </div>
                   </>
                 ) : null}

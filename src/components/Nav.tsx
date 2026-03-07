@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSignupModal } from "./SignupModalProvider";
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const { openSignup } = useSignupModal();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50);
@@ -36,14 +38,12 @@ export default function Nav() {
           >
             💸 Calculate
           </button>
-          <a
-            href="https://bankonloop.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm px-4 py-2 bg-loop hover:bg-loop-dark text-white rounded-lg transition-colors"
+          <button
+            onClick={openSignup}
+            className="text-sm px-4 py-2 bg-loop hover:bg-loop-dark text-white rounded-lg transition-colors cursor-pointer"
           >
             Switch to Loop
-          </a>
+          </button>
         </div>
       </div>
     </motion.nav>

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Could not extract meaningful text from the image. Please upload a clearer bank statement." }, { status: 422 });
     }
 
-    // Step 2: Analyze the extracted text for FX fees
+    // Step 2: Full banking audit — FX fees, account fees, payment inefficiencies, recommendations
     const analysisRes = await fetch(MISTRAL_CHAT_API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -64,39 +64,75 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an FX fee analyst. Analyze bank statements to find hidden foreign exchange fees and markups. You MUST respond with valid JSON only — no markdown, no code fences, no explanation outside the JSON.`,
+            content: `You are a banking cost analyst for Loop (bankonloop.com), a Canadian fintech. You audit bank statements to find EVERY way the bank is costing the business money — not just FX fees.
+
+Loop offers:
+- $0 account fees (no monthly fees ever)
+- Multi-currency accounts (CAD, USD, EUR, GBP) with local account numbers
+- 0% FX on card spend, 0.1-0.5% on conversions (banks charge 2.5-5.7%)
+- $0 wire fees (banks charge $25-50 per wire)
+- Free EFT, ACH, SEPA payments
+- Free e-Transfers (unlimited)
+- Corporate credit cards with rewards
+- Up to $1M credit limits
+
+You MUST respond with valid JSON only — no markdown, no code fences, no explanation outside the JSON.`,
           },
           {
             role: "user",
-            content: `Analyze this bank statement text and identify all international/FX transactions, markups, and fees.
+            content: `Do a FULL audit of this bank statement. Find every cost, inefficiency, and opportunity.
 
 EXTRACTED STATEMENT TEXT:
 ${extractedText}
 
-Return ONLY this JSON structure (no markdown fences):
+Analyze and return ONLY this JSON (no markdown fences):
 {
-  "transactions": [
+  "bankName": "detected bank name",
+  "statementPeriod": "e.g. Jan 23 - Feb 23, 2026",
+  "currency": "CAD",
+  "openingBalance": number,
+  "closingBalance": number,
+  
+  "findings": [
     {
-      "date": "YYYY-MM-DD",
-      "description": "string",
-      "amount": number (CAD),
-      "bankRate": number (the rate the bank used, or best estimate),
-      "midMarket": number (estimated mid-market rate at that date),
-      "markup": number (percentage markup over mid-market),
-      "fee": number (dollar amount of the hidden markup)
+      "category": "account_fee" | "fx_markup" | "wire_fee" | "etransfer_fee" | "payment_inefficiency" | "card_fee" | "other_fee",
+      "date": "YYYY-MM-DD or null",
+      "description": "what we found",
+      "amount": number (the fee or cost),
+      "loopAlternative": "what Loop offers instead",
+      "savingsPerOccurrence": number
     }
   ],
-  "wireFees": number (total wire transfer fees found),
-  "totalFees": number (sum of all hidden fees + wire fees),
-  "avgMarkup": number (average markup percentage across transactions),
-  "annualProjection": number (totalFees * 12 if monthly statement, or extrapolate),
-  "loopSavings": number (annualProjection minus what Loop would charge at 0.3% avg markup and $0 wire fees),
-  "statementPeriod": "string describing the period",
-  "currency": "CAD or detected base currency",
-  "bankName": "detected bank name or Unknown"
+  
+  "recommendations": [
+    {
+      "title": "short actionable title",
+      "description": "detailed recommendation — e.g. switch e-transfers to Loop for free, open a USD account to avoid double conversion, etc.",
+      "estimatedAnnualSavings": number,
+      "priority": "high" | "medium" | "low"
+    }
+  ],
+  
+  "summary": {
+    "totalFeesFound": number,
+    "totalFxMarkups": number,
+    "totalAccountFees": number,
+    "totalWireFees": number,
+    "totalOtherFees": number,
+    "annualProjection": number (extrapolate to 12 months),
+    "loopAnnualCost": number (what the same activity would cost on Loop),
+    "annualSavings": number
+  }
 }
 
-If you cannot identify specific FX transactions, still estimate based on any international transfers, foreign currency amounts, or conversion fees visible. For mid-market rates, use your best knowledge of rates around the transaction dates. If dates are ambiguous, use reasonable estimates.`,
+Be thorough:
+- Flag monthly/account fees (Loop charges $0)
+- Flag e-Transfer fees if any (Loop: free unlimited)
+- Flag wire fees (Loop: $0)
+- Flag any FX conversions and estimate the markup vs mid-market
+- If you see domestic payments that could be faster/cheaper, recommend alternatives
+- If you see patterns (e.g. regular USD payments) suggest opening a Loop USD account
+- Even for simple statements, find what the bank is charging and what Loop would save`,
           },
         ],
         max_tokens: 4000,
@@ -126,15 +162,23 @@ If you cannot identify specific FX transactions, still estimate based on any int
 
     // Ensure required fields with defaults
     const result = {
-      transactions: analysis.transactions || [],
-      wireFees: analysis.wireFees || 0,
-      totalFees: analysis.totalFees || 0,
-      avgMarkup: analysis.avgMarkup || 0,
-      annualProjection: analysis.annualProjection || 0,
-      loopSavings: analysis.loopSavings || 0,
+      bankName: analysis.bankName || "Unknown",
       statementPeriod: analysis.statementPeriod || "Unknown",
       currency: analysis.currency || "CAD",
-      bankName: analysis.bankName || "Unknown",
+      openingBalance: analysis.openingBalance || 0,
+      closingBalance: analysis.closingBalance || 0,
+      findings: analysis.findings || [],
+      recommendations: analysis.recommendations || [],
+      summary: {
+        totalFeesFound: analysis.summary?.totalFeesFound || 0,
+        totalFxMarkups: analysis.summary?.totalFxMarkups || 0,
+        totalAccountFees: analysis.summary?.totalAccountFees || 0,
+        totalWireFees: analysis.summary?.totalWireFees || 0,
+        totalOtherFees: analysis.summary?.totalOtherFees || 0,
+        annualProjection: analysis.summary?.annualProjection || 0,
+        loopAnnualCost: analysis.summary?.loopAnnualCost || 0,
+        annualSavings: analysis.summary?.annualSavings || 0,
+      },
     };
 
     return NextResponse.json(result);

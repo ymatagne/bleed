@@ -2,29 +2,43 @@
 
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-interface AuditTransaction {
-  date: string;
+interface Finding {
+  category: string;
+  date: string | null;
   description: string;
   amount: number;
-  bankRate: number;
-  midMarket: number;
-  markup: number;
-  fee: number;
+  loopAlternative: string;
+  savingsPerOccurrence: number;
+}
+
+interface Recommendation {
+  title: string;
+  description: string;
+  estimatedAnnualSavings: number;
+  priority: "high" | "medium" | "low";
 }
 
 interface AuditResult {
-  transactions: AuditTransaction[];
-  wireFees: number;
-  totalFees: number;
-  avgMarkup: number;
-  annualProjection: number;
-  loopSavings: number;
-  statementPeriod?: string;
-  currency?: string;
-  bankName?: string;
+  bankName: string;
+  statementPeriod: string;
+  currency: string;
+  openingBalance: number;
+  closingBalance: number;
+  findings: Finding[];
+  recommendations: Recommendation[];
+  summary: {
+    totalFeesFound: number;
+    totalFxMarkups: number;
+    totalAccountFees: number;
+    totalWireFees: number;
+    totalOtherFees: number;
+    annualProjection: number;
+    loopAnnualCost: number;
+    annualSavings: number;
+  };
 }
 
 const banks = [
@@ -149,20 +163,45 @@ function ScanTab() {
   );
 }
 
-function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
-  const noFxFound = data.transactions.length === 0 && data.totalFees === 0;
+const categoryIcons: Record<string, typeof DollarSign> = {
+  account_fee: Building2,
+  fx_markup: TrendingDown,
+  wire_fee: Zap,
+  etransfer_fee: ArrowRight,
+  payment_inefficiency: Zap,
+  card_fee: CreditCard,
+  other_fee: DollarSign,
+};
 
-  if (noFxFound) {
+const categoryLabels: Record<string, string> = {
+  account_fee: "Account Fee",
+  fx_markup: "FX Markup",
+  wire_fee: "Wire Fee",
+  etransfer_fee: "e-Transfer Fee",
+  payment_inefficiency: "Inefficiency",
+  card_fee: "Card Fee",
+  other_fee: "Fee",
+};
+
+const priorityColors: Record<string, string> = {
+  high: "bg-danger/10 text-danger border-danger/20",
+  medium: "bg-amber-50 text-amber-700 border-amber-200",
+  low: "bg-loop/5 text-loop border-loop/20",
+};
+
+function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
+  const nothingFound = data.findings.length === 0 && data.summary.totalFeesFound === 0 && data.recommendations.length === 0;
+
+  if (nothingFound) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center py-8">
         <div className="w-16 h-16 mx-auto bg-loop/10 rounded-full flex items-center justify-center">
           <Check className="w-8 h-8 text-loop" />
         </div>
         <div>
-          <h3 className="text-2xl font-bold text-loop-deep mb-2">No FX transactions found</h3>
+          <h3 className="text-2xl font-bold text-loop-deep mb-2">Your statement looks clean</h3>
           <p className="text-text-muted max-w-md mx-auto">
-            This statement doesn&apos;t contain international or foreign currency transactions. 
-            Upload a statement that includes USD, EUR, or GBP payments to see your hidden FX fees.
+            We didn&apos;t find fees or inefficiencies on this statement. Try uploading one with international transactions, wire transfers, or FX conversions.
           </p>
         </div>
         {data.bankName && data.bankName !== "Unknown" && (
@@ -172,22 +211,8 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           </p>
         )}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          <button
-            onClick={onReset}
-            className="px-6 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors"
-          >
+          <button onClick={onReset} className="px-6 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors">
             Upload another statement
-          </button>
-          <button
-            onClick={() => {
-              onReset();
-              // Switch to calculator tab
-              const calcBtn = document.querySelector('[data-tab="calc"]') as HTMLButtonElement;
-              calcBtn?.click();
-            }}
-            className="px-6 py-3 border border-border hover:border-loop text-text-muted hover:text-loop rounded-xl transition-colors"
-          >
-            Try the calculator instead
           </button>
         </div>
       </motion.div>
@@ -201,9 +226,14 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
         <div>
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-5 h-5 text-danger" />
-            <span className="text-sm font-mono text-danger uppercase tracking-wider">FX Audit Report</span>
+            <span className="text-sm font-mono text-danger uppercase tracking-wider">Banking Audit Report</span>
           </div>
-          <h3 className="text-2xl font-bold text-loop-deep">We found hidden fees in your statement.</h3>
+          <h3 className="text-2xl font-bold text-loop-deep">
+            We found {data.findings.length} issue{data.findings.length !== 1 ? "s" : ""} in your statement.
+          </h3>
+          {data.bankName !== "Unknown" && (
+            <p className="text-sm text-text-dim mt-1">{data.bankName} · {data.statementPeriod}</p>
+          )}
         </div>
         <button onClick={onReset} className="p-2 hover:bg-surface-dark rounded-lg transition-colors">
           <X className="w-5 h-5 text-text-dim" />
@@ -213,10 +243,10 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Transactions Found", value: data.transactions.length.toString(), icon: FileText, accent: false },
-          { label: "Avg. FX Markup", value: `${data.avgMarkup}%`, icon: TrendingDown, accent: true },
-          { label: "Hidden Fees (This Period)", value: formatCurrency(data.totalFees), icon: DollarSign, accent: true },
-          { label: "Annual Projection", value: formatCurrency(data.annualProjection), icon: BarChart3, accent: true },
+          { label: "Issues Found", value: data.findings.length.toString(), icon: AlertTriangle, accent: false },
+          { label: "Fees This Period", value: formatCurrency(data.summary.totalFeesFound), icon: DollarSign, accent: true },
+          { label: "Annual Projection", value: formatCurrency(data.summary.annualProjection), icon: BarChart3, accent: true },
+          { label: "You&apos;d Save / Year", value: formatCurrency(data.summary.annualSavings), icon: Shield, accent: false, green: true },
         ].map((card) => (
           <motion.div
             key={card.label}
@@ -224,86 +254,120 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white border border-border rounded-xl p-4"
           >
-            <card.icon className={`w-5 h-5 mb-2 ${card.accent ? "text-danger" : "text-loop"}`} />
+            <card.icon className={`w-5 h-5 mb-2 ${card.green ? "text-loop" : card.accent ? "text-danger" : "text-loop"}`} />
             <p className="text-xs text-text-dim uppercase tracking-wider">{card.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${card.accent ? "text-danger" : "text-loop-deep"}`}>{card.value}</p>
+            <p className={`text-2xl font-bold mt-1 ${card.green ? "text-loop" : card.accent ? "text-danger" : "text-loop-deep"}`}>{card.value}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Transaction Table */}
+      {/* Findings */}
       <div className="bg-white border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border-light">
-          <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">Transaction Breakdown</h4>
+          <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border-light text-text-dim text-left">
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Description</th>
-                <th className="p-3 font-medium text-right">Amount</th>
-                <th className="p-3 font-medium text-right">Bank Rate</th>
-                <th className="p-3 font-medium text-right">Mid-Market</th>
-                <th className="p-3 font-medium text-right">Markup</th>
-                <th className="p-3 font-medium text-right">Hidden Fee</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.transactions.map((tx, i) => (
-                <motion.tr
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-b border-border-light/50 hover:bg-surface-tint transition-colors"
-                >
-                  <td className="p-3 font-mono text-text-dim">{tx.date}</td>
-                  <td className="p-3">{tx.description}</td>
-                  <td className="p-3 text-right font-mono">{formatCurrency(tx.amount, 2)}</td>
-                  <td className="p-3 text-right font-mono">{tx.bankRate.toFixed(4)}</td>
-                  <td className="p-3 text-right font-mono">{tx.midMarket.toFixed(4)}</td>
-                  <td className="p-3 text-right font-mono text-danger">{tx.markup.toFixed(2)}%</td>
-                  <td className="p-3 text-right font-mono text-danger font-semibold">{formatCurrency(tx.fee, 2)}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="divide-y divide-border-light">
+          {data.findings.map((finding, i) => {
+            const Icon = categoryIcons[finding.category] || DollarSign;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08 }}
+                className="p-4 hover:bg-surface-tint transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon className="w-4 h-4 text-danger" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono text-text-dim uppercase">{categoryLabels[finding.category] || finding.category}</span>
+                      {finding.date && <span className="text-xs text-text-dim">· {finding.date}</span>}
+                    </div>
+                    <p className="text-sm text-text font-medium">{finding.description}</p>
+                    <p className="text-sm text-loop mt-1">💡 Loop: {finding.loopAlternative}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
+                    {finding.savingsPerOccurrence > 0 && (
+                      <p className="text-xs text-loop">Save {formatCurrency(finding.savingsPerOccurrence)}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
+      {/* Recommendations */}
+      {data.recommendations.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">Recommendations</h4>
+          {data.recommendations.map((rec, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`border rounded-xl p-5 ${priorityColors[rec.priority]}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono uppercase">{rec.priority} priority</span>
+                  </div>
+                  <h5 className="font-semibold text-loop-deep">{rec.title}</h5>
+                  <p className="text-sm text-text-muted mt-1">{rec.description}</p>
+                </div>
+                {rec.estimatedAnnualSavings > 0 && (
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-text-dim">Est. annual savings</p>
+                    <p className="text-xl font-bold text-loop">{formatCurrency(rec.estimatedAnnualSavings)}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
       {/* Loop Comparison */}
       <div className="bg-loop-deep rounded-xl p-6 text-white">
-        <h4 className="font-semibold mb-4 text-white/90">What you&apos;d save with Loop</h4>
+        <h4 className="font-semibold mb-4 text-white/90">Your bank vs Loop</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-sm text-white/60">Your bank charges</p>
-            <p className="text-3xl font-bold text-accent-blue">{formatCurrency(data.annualProjection)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-sm text-white/60">Your bank costs you</p>
+            <p className="text-3xl font-bold text-accent-blue">{formatCurrency(data.summary.annualProjection)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
           <div>
             <p className="text-sm text-white/60">With Loop</p>
-            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.annualProjection - data.loopSavings)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.summary.loopAnnualCost)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
           <div>
-            <p className="text-sm text-white/60">Annual savings</p>
-            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.loopSavings)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-sm text-white/60">You save</p>
+            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.summary.annualSavings)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
         </div>
 
-        <div className="mt-6 p-4 bg-white/10 rounded-lg">
-          <p className="text-sm text-white/60 mb-2">What {formatCurrency(data.loopSavings)} could buy your business:</p>
-          <div className="flex flex-wrap gap-3">
-            {[
-              `${Math.floor(data.loopSavings / 50)} months of software subscriptions`,
-              `${Math.floor(data.loopSavings / 85)} hours of contractor work`,
-              `${Math.floor(data.loopSavings / 1500)} marketing campaigns`,
-            ].map((item) => (
-              <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
-                {item}
-              </span>
-            ))}
+        {data.summary.annualSavings > 0 && (
+          <div className="mt-6 p-4 bg-white/10 rounded-lg">
+            <p className="text-sm text-white/60 mb-2">What {formatCurrency(data.summary.annualSavings)} could buy your business:</p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                data.summary.annualSavings >= 50 ? `${Math.floor(data.summary.annualSavings / 50)} months of software tools` : null,
+                data.summary.annualSavings >= 85 ? `${Math.floor(data.summary.annualSavings / 85)} hours of contractor work` : null,
+                data.summary.annualSavings >= 500 ? `${Math.floor(data.summary.annualSavings / 500)} ad campaigns` : null,
+              ].filter(Boolean).map((item) => (
+                <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <a
           href="https://bankonloop.com"

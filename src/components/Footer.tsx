@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="border-t border-border-light py-12 px-6 bg-white">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-loop" />
+          <img src="/logo.svg" alt="Bleed" className="w-5 h-5" />
           <span className="font-bold tracking-tight text-loop-deep">bleed</span>
           <span className="text-xs text-text-dim">by Loop</span>
         </div>

@@ -23,6 +23,15 @@ interface Recommendation {
   priority: "high" | "medium" | "low";
 }
 
+interface PlanComparison {
+  plan: string;
+  monthlyFee: number;
+  fxRate: number;
+  annualCostOnPlan: number;
+  annualSavingsVsBank: number;
+  recommended: boolean;
+}
+
 interface AuditResult {
   bankName: string;
   statementPeriod: string;
@@ -41,6 +50,7 @@ interface AuditResult {
     loopAnnualCost: number;
     annualSavings: number;
   };
+  planComparison?: PlanComparison[];
 }
 
 const banks = [
@@ -408,50 +418,94 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
         </div>
       )}
 
-      {/* Loop Comparison */}
-      <div className="bg-loop-deep rounded-xl p-6 text-white">
-        <h4 className="font-semibold mb-4 text-white/90">Your bank vs Loop</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <p className="text-sm text-white/60">Your bank costs you</p>
-            <p className="text-3xl font-bold text-accent-blue"><AnimatedNumber value={data.summary.annualProjection} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
-          </div>
-          <div>
-            <p className="text-sm text-white/60">With Loop</p>
-            <p className="text-3xl font-bold text-accent-green"><AnimatedNumber value={data.summary.loopAnnualCost} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
-          </div>
-          <div>
-            <p className="text-sm text-white/60">You save</p>
-            <p className="text-3xl font-bold text-accent-green"><AnimatedNumber value={data.summary.annualSavings} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
-          </div>
+      {/* Loop Plan Comparison */}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h4 className="text-xl font-bold text-loop-deep mb-1">Your bank vs Loop</h4>
+          <p className="text-sm text-text-muted">Your bank costs you <span className="font-bold text-danger">{formatCurrency(data.summary.annualProjection)}/yr</span>. Here&apos;s what each Loop plan saves you.</p>
         </div>
 
-        {data.summary.annualSavings > 0 && (
-          <div className="mt-6 p-4 bg-white/10 rounded-lg">
-            <p className="text-sm text-white/60 mb-2">What {formatCurrency(data.summary.annualSavings)} could buy your business:</p>
-            <div className="flex flex-wrap gap-3">
-              {[
-                data.summary.annualSavings >= 50 ? `${Math.floor(data.summary.annualSavings / 50)} months of software tools` : null,
-                data.summary.annualSavings >= 85 ? `${Math.floor(data.summary.annualSavings / 85)} hours of contractor work` : null,
-                data.summary.annualSavings >= 500 ? `${Math.floor(data.summary.annualSavings / 500)} ad campaigns` : null,
-              ].filter(Boolean).map((item) => (
-                <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(data.planComparison || []).map((plan, i) => {
+            const isRec = plan.recommended;
+            return (
+              <motion.div
+                key={plan.plan}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`relative rounded-2xl p-6 border-2 transition-all ${
+                  isRec
+                    ? "border-[#C4F6C6] bg-[#01251e] text-white scale-[1.03] shadow-[0_0_30px_rgba(196,246,198,0.3)]"
+                    : "border-border bg-white text-text"
+                }`}
+              >
+                {isRec && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#C4F6C6] text-[#004639] text-xs font-bold uppercase tracking-wider rounded-full">
+                    Recommended
+                  </div>
+                )}
+                <div className="mb-4">
+                  <h5 className={`text-lg font-bold ${isRec ? "text-white" : "text-loop-deep"}`}>{plan.plan}</h5>
+                  <p className={`text-sm ${isRec ? "text-white/60" : "text-text-dim"}`}>
+                    {plan.monthlyFee === 0 ? "Free" : `$${plan.monthlyFee}/mo`}
+                  </p>
+                </div>
 
-        <a
-          href="https://bankonloop.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-accent-green text-loop-deep font-semibold rounded-xl hover:brightness-110 transition-all"
-        >
-          Stop the bleed — switch to Loop
-          <ArrowRight className="w-4 h-4" />
-        </a>
+                <div className="space-y-3 mb-6">
+                  <div>
+                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>FX Rate</p>
+                    <p className={`text-lg font-bold ${isRec ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</p>
+                  </div>
+                  <div>
+                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Cost on Plan</p>
+                    <p className={`text-lg font-bold ${isRec ? "text-white" : "text-text"}`}>{formatCurrency(plan.annualCostOnPlan)}</p>
+                  </div>
+                  <div>
+                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Savings vs Bank</p>
+                    <p className={`text-2xl font-bold ${isRec ? "text-[#C4F6C6]" : "text-loop"}`}>{formatCurrency(plan.annualSavingsVsBank)}</p>
+                  </div>
+                </div>
+
+                <a
+                  href="https://bankonloop.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl transition-all text-sm ${
+                    isRec
+                      ? "bg-[#C4F6C6] text-[#004639] hover:brightness-110"
+                      : "bg-loop/10 text-loop hover:bg-loop/20"
+                  }`}
+                >
+                  Get Started <ArrowRight className="w-4 h-4" />
+                </a>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* What savings could buy — attached to recommended plan */}
+        {(() => {
+          const rec = (data.planComparison || []).find(p => p.recommended);
+          const savings = rec?.annualSavingsVsBank || data.summary.annualSavings;
+          if (savings <= 0) return null;
+          return (
+            <div className="bg-[#01251e] rounded-xl p-5 text-white">
+              <p className="text-sm text-white/60 mb-3">What {formatCurrency(savings)}/yr in savings could buy your business:</p>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  savings >= 50 ? `${Math.floor(savings / 50)} months of software tools` : null,
+                  savings >= 85 ? `${Math.floor(savings / 85)} hours of contractor work` : null,
+                  savings >= 500 ? `${Math.floor(savings / 500)} ad campaigns` : null,
+                ].filter(Boolean).map((item) => (
+                  <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Share Buttons */}
@@ -460,57 +514,49 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
   );
 }
 
+const loopPlans = [
+  { name: "Basic", monthlyFee: 0, fxRate: 0.5, features: ["Free USD/EUR/GBP accounts", "20 virtual cards", "1x points on CAD"] },
+  { name: "Plus", monthlyFee: 79, fxRate: 0.25, features: ["Unlimited virtual cards", "10 free physical cards", "2x points all spend", "Instant deposits"] },
+  { name: "Power", monthlyFee: 299, fxRate: 0.10, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x points all spend"] },
+];
+
 function CalculatorTab() {
   const [revenue, setRevenue] = useState(50000);
   const [intlPercent, setIntlPercent] = useState(30);
   const [bankIdx, setBankIdx] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState(0);
   
   const bank = banks[bankIdx];
   const intlAmount = revenue * (intlPercent / 100);
   const bankFees = intlAmount * (bank.markup / 100);
-  const loopFees = intlAmount * 0.5 / 100;
-  const monthlySavings = bankFees - loopFees;
-  const annualSavings = monthlySavings * 12;
+
+  const planResults = loopPlans.map(plan => {
+    const loopFxFees = intlAmount * (plan.fxRate / 100);
+    const monthlyTotal = loopFxFees + plan.monthlyFee;
+    const monthlySavings = bankFees - monthlyTotal;
+    return { ...plan, loopFxFees, monthlyTotal, monthlySavings, annualSavings: monthlySavings * 12 };
+  });
+
+  // Auto-recommend: best net annual savings
+  const bestIdx = planResults.reduce((best, p, i) => p.annualSavings > planResults[best].annualSavings ? i : best, 0);
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm text-text-muted mb-2">Monthly Revenue (CAD)</label>
-            <input
-              type="range"
-              min={5000}
-              max={500000}
-              step={5000}
-              value={revenue}
-              onChange={(e) => setRevenue(Number(e.target.value))}
-              className="w-full accent-loop"
-            />
+            <input type="range" min={5000} max={500000} step={5000} value={revenue} onChange={(e) => setRevenue(Number(e.target.value))} className="w-full accent-loop" />
             <div className="text-2xl font-bold text-loop-deep mt-1">{formatCurrency(revenue)}</div>
           </div>
-
           <div>
             <label className="block text-sm text-text-muted mb-2">% International Transactions</label>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              step={5}
-              value={intlPercent}
-              onChange={(e) => setIntlPercent(Number(e.target.value))}
-              className="w-full accent-loop"
-            />
+            <input type="range" min={5} max={100} step={5} value={intlPercent} onChange={(e) => setIntlPercent(Number(e.target.value))} className="w-full accent-loop" />
             <div className="text-2xl font-bold text-loop-deep mt-1">{intlPercent}%</div>
           </div>
-
           <div>
             <label className="block text-sm text-text-muted mb-2">Current Bank</label>
-            <select
-              value={bankIdx}
-              onChange={(e) => setBankIdx(Number(e.target.value))}
-              className="w-full bg-white border border-border rounded-xl p-3 text-text"
-            >
+            <select value={bankIdx} onChange={(e) => setBankIdx(Number(e.target.value))} className="w-full bg-white border border-border rounded-xl p-3 text-text">
               {banks.map((b, i) => (
                 <option key={b.name} value={i}>{b.name} (~{b.markup}% markup)</option>
               ))}
@@ -518,34 +564,94 @@ function CalculatorTab() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white border border-border rounded-xl p-5">
-            <p className="text-sm text-text-dim mb-1">International volume / month</p>
-            <p className="text-2xl font-bold text-loop-deep">{formatCurrency(intlAmount)}</p>
+        <div className="bg-white border-2 border-danger/20 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-text-dim">{bank.name} charges you</p>
+            <p className="text-xs text-text-dim">{bank.markup}% markup × {formatCurrency(intlAmount)}</p>
           </div>
-          
-          <div className="bg-white border-2 border-danger/20 rounded-xl p-5">
-            <p className="text-sm text-text-dim mb-1">{bank.name} charges you</p>
-            <p className="text-3xl font-bold text-danger">{formatCurrency(bankFees)}<span className="text-sm text-text-dim font-normal">/mo</span></p>
-            <p className="text-xs text-text-dim mt-1">{bank.markup}% markup × {formatCurrency(intlAmount)}</p>
-          </div>
+          <p className="text-3xl font-bold text-danger">{formatCurrency(bankFees)}<span className="text-sm text-text-dim font-normal">/mo</span></p>
+        </div>
+      </div>
 
-          <div className="bg-white border-2 border-loop/20 rounded-xl p-5">
-            <p className="text-sm text-text-dim mb-1">With Loop, you&apos;d pay</p>
-            <p className="text-3xl font-bold text-loop">{formatCurrency(loopFees)}<span className="text-sm text-text-dim font-normal">/mo</span></p>
-            <p className="text-xs text-text-dim mt-1">~0.5% markup × {formatCurrency(intlAmount)}</p>
+      {/* Plan toggle */}
+      <div>
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex bg-white border border-border rounded-xl p-1">
+            {loopPlans.map((plan, i) => (
+              <button
+                key={plan.name}
+                onClick={() => setSelectedPlan(i)}
+                className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
+                  selectedPlan === i ? "bg-[#004639] text-white" : "text-text-muted hover:text-text"
+                }`}
+              >
+                {plan.name}
+                {i === bestIdx && (
+                  <span className="absolute -top-2 -right-1 w-2 h-2 bg-[#C4F6C6] rounded-full" />
+                )}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <motion.div
-            key={annualSavings}
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="bg-loop-deep rounded-xl p-5 text-white"
-          >
-            <p className="text-sm text-white/60 mb-1">Your annual savings with Loop</p>
-            <p className="text-4xl font-bold text-accent-green">{formatCurrency(annualSavings)}</p>
-            <p className="text-sm text-white/70 mt-2">That&apos;s {formatCurrency(monthlySavings)} back in your pocket every month.</p>
-          </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {planResults.map((plan, i) => {
+            const isSelected = selectedPlan === i;
+            const isBest = i === bestIdx;
+            return (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                onClick={() => setSelectedPlan(i)}
+                className={`relative cursor-pointer rounded-2xl p-5 border-2 transition-all ${
+                  isSelected
+                    ? isBest
+                      ? "border-[#C4F6C6] bg-[#01251e] text-white shadow-[0_0_30px_rgba(196,246,198,0.3)] scale-[1.02]"
+                      : "border-[#004639] bg-[#01251e] text-white scale-[1.02]"
+                    : "border-border bg-white hover:border-loop/30"
+                }`}
+              >
+                {isBest && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#C4F6C6] text-[#004639] text-xs font-bold uppercase tracking-wider rounded-full">
+                    Best Value
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className={`font-bold ${isSelected ? "text-white" : "text-loop-deep"}`}>{plan.name}</h5>
+                  <span className={`text-sm ${isSelected ? "text-white/60" : "text-text-dim"}`}>
+                    {plan.monthlyFee === 0 ? "Free" : `$${plan.monthlyFee}/mo`}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className={isSelected ? "text-white/60" : "text-text-dim"}>FX Rate</span>
+                    <span className={`font-semibold ${isSelected ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className={isSelected ? "text-white/60" : "text-text-dim"}>Loop cost/mo</span>
+                    <span className={`font-semibold ${isSelected ? "text-white" : "text-text"}`}>{formatCurrency(plan.monthlyTotal)}</span>
+                  </div>
+                </div>
+                <div className={`rounded-lg p-3 text-center ${isSelected ? "bg-white/10" : "bg-loop/5"}`}>
+                  <p className={`text-xs ${isSelected ? "text-white/50" : "text-text-dim"}`}>Annual savings</p>
+                  <p className={`text-2xl font-bold ${plan.annualSavings > 0 ? (isSelected ? "text-[#C4F6C6]" : "text-loop") : "text-danger"}`}>
+                    {formatCurrency(plan.annualSavings)}
+                  </p>
+                </div>
+                {isSelected && plan.features && (
+                  <div className="mt-4 space-y-1.5">
+                    {plan.features.map(f => (
+                      <div key={f} className="flex items-center gap-2 text-xs text-white/70">
+                        <Check className="w-3 h-3 text-[#C4F6C6]" /> {f}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -554,7 +660,7 @@ function CalculatorTab() {
           href="https://bankonloop.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-8 py-4 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors text-lg"
+          className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg"
         >
           Start saving with Loop
           <ArrowRight className="w-5 h-5" />

@@ -103,10 +103,14 @@ export async function POST(req: NextRequest) {
             role: "system",
             content: `You are a banking cost analyst for Loop (bankonloop.com), a Canadian fintech. You audit bank statements to find EVERY way the bank is costing the business money — not just FX fees.
 
-Loop offers:
-- $0 account fees (no monthly fees ever)
+Loop offers 3 plans:
+1. **Basic** — $0/mo, 0.50% FX on conversions, 0% FX on cards, free USD/EUR/GBP accounts, free international payments, unlimited team members, 20 virtual cards, 1x points on CAD spend
+2. **Plus** — $79/mo, 0.25% FX on conversions, 0% FX on cards, 2x points on all card spend, unlimited virtual cards, 10 free physical cards, instant deposits
+3. **Power** — $299/mo, 0.10% FX on conversions, 0% FX on cards, 2x points all spend, 50 free physical cards, dedicated concierge, custom rewards
+
+All plans include:
+- $0 account fees
 - Multi-currency accounts (CAD, USD, EUR, GBP) with local account numbers
-- 0% FX on card spend, 0.1-0.5% on conversions (banks charge 2.5-5.7%)
 - $0 wire fees (banks charge $25-50 per wire)
 - Free EFT, ACH, SEPA payments
 - Free e-Transfers (unlimited)
@@ -160,10 +164,39 @@ Analyze and return ONLY this JSON (no markdown fences):
     "totalWireFees": number,
     "totalOtherFees": number,
     "annualProjection": number (extrapolate to 12 months based on data),
-    "loopAnnualCost": number (what the same activity would cost on Loop),
+    "loopAnnualCost": number (what the same activity would cost on Loop Basic),
     "annualSavings": number
-  }
+  },
+  
+  "planComparison": [
+    {
+      "plan": "Basic",
+      "monthlyFee": 0,
+      "fxRate": 0.5,
+      "annualCostOnPlan": number (annual FX cost at 0.5% + $0/mo fee + any remaining non-FX fees on Loop),
+      "annualSavingsVsBank": number (bank annualProjection minus annualCostOnPlan),
+      "recommended": boolean
+    },
+    {
+      "plan": "Plus",
+      "monthlyFee": 79,
+      "fxRate": 0.25,
+      "annualCostOnPlan": number (annual FX cost at 0.25% + $79×12 fee + any remaining non-FX fees on Loop),
+      "annualSavingsVsBank": number,
+      "recommended": boolean
+    },
+    {
+      "plan": "Power",
+      "monthlyFee": 299,
+      "fxRate": 0.10,
+      "annualCostOnPlan": number (annual FX cost at 0.10% + $299×12 fee + any remaining non-FX fees on Loop),
+      "annualSavingsVsBank": number,
+      "recommended": boolean
+    }
+  ]
 }
+
+For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. Recommend the plan where net savings (annualSavingsVsBank) are highest while the monthly fee is justified — for low FX volume (<$100K/yr) recommend Basic, medium ($100K-$500K/yr) recommend Plus, high (>$500K/yr) recommend Power. Only ONE plan should have recommended: true.
 
 Be thorough:
 - Flag monthly/account fees (Loop charges $0)
@@ -221,6 +254,11 @@ ${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing c
         loopAnnualCost: analysis.summary?.loopAnnualCost || 0,
         annualSavings: analysis.summary?.annualSavings || 0,
       },
+      planComparison: analysis.planComparison || [
+        { plan: "Basic", monthlyFee: 0, fxRate: 0.5, annualCostOnPlan: analysis.summary?.loopAnnualCost || 0, annualSavingsVsBank: analysis.summary?.annualSavings || 0, recommended: true },
+        { plan: "Plus", monthlyFee: 79, fxRate: 0.25, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
+        { plan: "Power", monthlyFee: 299, fxRate: 0.10, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
+      ],
       ...(failedFiles.length > 0 ? { failedFiles } : {}),
     };
 

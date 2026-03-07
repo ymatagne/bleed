@@ -53,29 +53,31 @@ const banks = [
 ];
 
 function ScanTab() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [progress, setProgress] = useState<string>("");
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) processFile(f);
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length) processFiles(dropped);
   }, []);
 
-  const processFile = async (f: File) => {
-    setFile(f);
+  const processFiles = async (newFiles: File[]) => {
+    setFiles(newFiles);
     setAnalyzing(true);
     setError(null);
     setResult(null);
 
     try {
       const formData = new FormData();
-      formData.append("file", f);
+      newFiles.forEach((f) => formData.append("files", f));
 
+      setProgress(`Analyzing ${newFiles.length} file${newFiles.length > 1 ? "s" : ""}...`);
       const res = await fetch("/api/scan", { method: "POST", body: formData });
       const data = await res.json();
 
@@ -90,10 +92,11 @@ function ScanTab() {
       setError("Failed to connect to the analysis service. Please try again.");
     } finally {
       setAnalyzing(false);
+      setProgress("");
     }
   };
 
-  if (result) return <AuditReport data={result} onReset={() => { setFile(null); setResult(null); setError(null); }} />;
+  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); }} />;
 
   return (
     <div className="space-y-6">
@@ -102,7 +105,7 @@ function ScanTab() {
           <AlertTriangle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-danger font-medium">{error}</p>
-            <button onClick={() => { setError(null); setFile(null); }} className="text-xs text-danger/70 underline mt-1">Try again</button>
+            <button onClick={() => { setError(null); setFiles([]); }} className="text-xs text-danger/70 underline mt-1">Try again</button>
           </div>
         </motion.div>
       )}
@@ -117,8 +120,12 @@ function ScanTab() {
           id="file-input"
           type="file"
           accept=".pdf,.png,.jpg,.jpeg,.webp"
+          multiple
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
+          onChange={(e) => {
+            const selected = Array.from(e.target.files || []);
+            if (selected.length) processFiles(selected);
+          }}
         />
         
         {analyzing ? (
@@ -128,7 +135,7 @@ function ScanTab() {
               transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
               className="w-12 h-12 mx-auto border-2 border-loop border-t-transparent rounded-full"
             />
-            <p className="text-text-muted">Analyzing your statement...</p>
+            <p className="text-text-muted">{progress || "Analyzing your statement..."}</p>
             <div className="max-w-xs mx-auto space-y-2">
               {["Extracting transactions", "Identifying FX conversions", "Calculating hidden markups"].map((step, i) => (
                 <motion.div
@@ -146,17 +153,21 @@ function ScanTab() {
               ))}
             </div>
           </motion.div>
-        ) : file ? (
-          <div className="flex items-center justify-center gap-3">
-            <FileText className="w-8 h-8 text-loop" />
-            <span className="text-text">{file.name}</span>
+        ) : files.length > 0 ? (
+          <div className="space-y-2">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center justify-center gap-3">
+                <FileText className="w-5 h-5 text-loop" />
+                <span className="text-text text-sm">{f.name}</span>
+              </div>
+            ))}
           </div>
         ) : (
           <>
             <Upload className="w-12 h-12 mx-auto text-text-dim mb-4" />
-            <p className="text-lg text-text mb-2">Drop your bank statement here</p>
-            <p className="text-sm text-text-dim">PDF, PNG, or JPG — we&apos;ll extract the data automatically</p>
-            <p className="text-xs text-text-dim mt-4">Your file is processed securely and never stored</p>
+            <p className="text-lg text-text mb-2">Drop your bank statements here</p>
+            <p className="text-sm text-text-dim">Upload one or multiple statements — PDF, PNG, or JPG</p>
+            <p className="text-xs text-text-dim mt-4">Your files are processed securely and never stored</p>
           </>
         )}
       </div>

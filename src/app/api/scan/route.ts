@@ -3,6 +3,40 @@ import { NextRequest, NextResponse } from "next/server";
 const MISTRAL_OCR_API = "https://api.mistral.ai/v1/ocr";
 const MISTRAL_CHAT_API = "https://api.mistral.ai/v1/chat/completions";
 
+async function ocrFile(file: File, apiKey: string): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const buf = Buffer.from(await file.arrayBuffer());
+  const b64 = buf.toString("base64");
+
+  const isPdf = ext === "pdf" || file.type === "application/pdf";
+  const mimeMap: Record<string, string> = {
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf",
+  };
+  const mime = isPdf ? "application/pdf" : (mimeMap[ext || ""] || file.type || "image/jpeg");
+  const dataUrl = `data:${mime};base64,${b64}`;
+
+  const ocrBody = isPdf
+    ? { model: "mistral-ocr-latest", document: { type: "document_url", document_url: dataUrl } }
+    : { model: "mistral-ocr-latest", document: { type: "image_url", image_url: dataUrl } };
+
+  const ocrRes = await fetch(MISTRAL_OCR_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(ocrBody),
+  });
+
+  if (!ocrRes.ok) {
+    const err = await ocrRes.text();
+    console.error("Mistral OCR error:", err);
+    throw new Error(`OCR failed for ${file.name}`);
+  }
+
+  const ocrData = await ocrRes.json();
+  return ocrData.pages
+    ?.map((p: { markdown?: string }) => p.markdown || "")
+    .join("\n\n") || "";
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) {
@@ -11,51 +45,54 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    
+    // Support both single "file" and multiple "files" field names
+    const files: File[] = [];
+    const multiFiles = formData.getAll("files");
+    const singleFile = formData.get("file");
+    
+    if (multiFiles.length > 0) {
+      for (const f of multiFiles) {
+        if (f instanceof File) files.push(f);
+      }
+    } else if (singleFile instanceof File) {
+      files.push(singleFile);
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const buf = Buffer.from(await file.arrayBuffer());
-    const b64 = buf.toString("base64");
+    if (files.length === 0) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    }
 
-    // Determine MIME and OCR document type — check both extension and file.type
-    const isPdf = ext === "pdf" || file.type === "application/pdf";
-    const mimeMap: Record<string, string> = {
-      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf",
-    };
-    const mime = isPdf ? "application/pdf" : (mimeMap[ext || ""] || file.type || "image/jpeg");
-    const dataUrl = `data:${mime};base64,${b64}`;
+    if (files.length > 10) {
+      return NextResponse.json({ error: "Maximum 10 files at a time" }, { status: 400 });
+    }
 
-    // Step 1: OCR via Mistral Document AI endpoint (supports PDF + images)
-    const ocrBody = isPdf
-      ? { model: "mistral-ocr-latest", document: { type: "document_url", document_url: dataUrl } }
-      : { model: "mistral-ocr-latest", document: { type: "image_url", image_url: dataUrl } };
+    // OCR all files in parallel
+    const ocrResults = await Promise.allSettled(
+      files.map((f) => ocrFile(f, apiKey))
+    );
 
-    const ocrRes = await fetch(MISTRAL_OCR_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify(ocrBody),
+    const extractedTexts: string[] = [];
+    const failedFiles: string[] = [];
+
+    ocrResults.forEach((result, i) => {
+      if (result.status === "fulfilled" && result.value.length > 20) {
+        extractedTexts.push(`--- STATEMENT ${i + 1}: ${files[i].name} ---\n${result.value}`);
+      } else {
+        failedFiles.push(files[i].name);
+      }
     });
 
-    if (!ocrRes.ok) {
-      const err = await ocrRes.text();
-      console.error("Mistral OCR error:", err);
-      return NextResponse.json({ error: "Failed to process document with OCR" }, { status: 502 });
+    if (extractedTexts.length === 0) {
+      return NextResponse.json({ 
+        error: `Could not extract text from ${failedFiles.length === 1 ? "the file" : "any of the files"}. Please upload clearer bank statements.` 
+      }, { status: 422 });
     }
 
-    const ocrData = await ocrRes.json();
-    // Mistral OCR returns pages[] with markdown content
-    const extractedText = ocrData.pages
-      ?.map((p: { markdown?: string }) => p.markdown || "")
-      .join("\n\n") || "";
+    const combinedText = extractedTexts.join("\n\n");
+    const isMultiple = extractedTexts.length > 1;
 
-    if (!extractedText || extractedText.length < 20) {
-      return NextResponse.json({ error: "Could not extract meaningful text from the image. Please upload a clearer bank statement." }, { status: 422 });
-    }
-
-    // Step 2: Full banking audit — FX fees, account fees, payment inefficiencies, recommendations
+    // Step 2: Full banking audit
     const analysisRes = await fetch(MISTRAL_CHAT_API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -80,15 +117,18 @@ You MUST respond with valid JSON only — no markdown, no code fences, no explan
           },
           {
             role: "user",
-            content: `Do a FULL audit of this bank statement. Find every cost, inefficiency, and opportunity.
+            content: `Do a FULL audit of ${isMultiple ? "these bank statements" : "this bank statement"}. Find every cost, inefficiency, and opportunity.
+
+${isMultiple ? `You are analyzing ${extractedTexts.length} statements. Combine findings across all statements. For the annual projection, use the ACTUAL data across all periods rather than just multiplying one month.` : ""}
 
 EXTRACTED STATEMENT TEXT:
-${extractedText}
+${combinedText}
 
 Analyze and return ONLY this JSON (no markdown fences):
 {
   "bankName": "detected bank name",
-  "statementPeriod": "e.g. Jan 23 - Feb 23, 2026",
+  "statementPeriod": "${isMultiple ? "combined period across all statements, e.g. Oct 2025 - Feb 2026" : "e.g. Jan 23 - Feb 23, 2026"}",
+  "statementsAnalyzed": ${extractedTexts.length},
   "currency": "CAD",
   "openingBalance": number,
   "closingBalance": number,
@@ -119,7 +159,7 @@ Analyze and return ONLY this JSON (no markdown fences):
     "totalAccountFees": number,
     "totalWireFees": number,
     "totalOtherFees": number,
-    "annualProjection": number (extrapolate to 12 months),
+    "annualProjection": number (extrapolate to 12 months based on data),
     "loopAnnualCost": number (what the same activity would cost on Loop),
     "annualSavings": number
   }
@@ -132,10 +172,11 @@ Be thorough:
 - Flag any FX conversions and estimate the markup vs mid-market
 - If you see domestic payments that could be faster/cheaper, recommend alternatives
 - If you see patterns (e.g. regular USD payments) suggest opening a Loop USD account
-- Even for simple statements, find what the bank is charging and what Loop would save`,
+- Even for simple statements, find what the bank is charging and what Loop would save
+${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing costs, seasonal spikes)" : ""}`,
           },
         ],
-        max_tokens: 4000,
+        max_tokens: 6000,
         temperature: 0.1,
       }),
     });
@@ -164,6 +205,7 @@ Be thorough:
     const result = {
       bankName: analysis.bankName || "Unknown",
       statementPeriod: analysis.statementPeriod || "Unknown",
+      statementsAnalyzed: analysis.statementsAnalyzed || extractedTexts.length,
       currency: analysis.currency || "CAD",
       openingBalance: analysis.openingBalance || 0,
       closingBalance: analysis.closingBalance || 0,
@@ -179,6 +221,7 @@ Be thorough:
         loopAnnualCost: analysis.summary?.loopAnnualCost || 0,
         annualSavings: analysis.summary?.annualSavings || 0,
       },
+      ...(failedFiles.length > 0 ? { failedFiles } : {}),
     };
 
     return NextResponse.json(result);

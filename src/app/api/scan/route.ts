@@ -20,12 +20,12 @@ export async function POST(req: NextRequest) {
     const buf = Buffer.from(await file.arrayBuffer());
     const b64 = buf.toString("base64");
 
-    // Determine MIME and OCR document type
-    const isPdf = ext === "pdf";
+    // Determine MIME and OCR document type — check both extension and file.type
+    const isPdf = ext === "pdf" || file.type === "application/pdf";
     const mimeMap: Record<string, string> = {
       jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf",
     };
-    const mime = mimeMap[ext || ""] || "image/jpeg";
+    const mime = isPdf ? "application/pdf" : (mimeMap[ext || ""] || file.type || "image/jpeg");
     const dataUrl = `data:${mime};base64,${b64}`;
 
     // Step 1: OCR via Mistral Document AI endpoint (supports PDF + images)

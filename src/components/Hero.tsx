@@ -5,9 +5,9 @@ import { ArrowDown } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.08),transparent_70%)]" />
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden bg-white">
+      {/* Subtle gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,70,57,0.06),transparent_60%)]" />
       
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -19,15 +19,15 @@ export default function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-surface-light mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-surface-tint mb-8"
         >
-          <span className="w-2 h-2 rounded-full bg-blood animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-loop animate-pulse" />
           <span className="text-sm text-text-muted">Free FX Audit Tool</span>
         </motion.div>
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] text-loop-deep">
           Your bank is{" "}
-          <span className="text-blood">bleeding</span>
+          <span className="text-danger">bleeding</span>
           <br />
           you dry.
         </h1>
@@ -50,14 +50,13 @@ export default function Hero() {
         >
           <a
             href="#tool"
-            className="group relative px-8 py-4 bg-blood hover:bg-blood-light text-white font-semibold rounded-xl transition-all duration-300 animate-pulse-glow text-lg"
+            className="group relative px-8 py-4 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-all duration-300 animate-pulse-glow text-lg"
           >
             Upload Your Statement
-            <span className="absolute inset-0 rounded-xl bg-blood opacity-0 group-hover:opacity-20 transition-opacity" />
           </a>
           <a
             href="#tool"
-            className="px-8 py-4 border border-border hover:border-text-dim text-text-muted hover:text-text rounded-xl transition-all duration-300 text-lg"
+            className="px-8 py-4 border border-border hover:border-loop text-text-muted hover:text-loop rounded-xl transition-all duration-300 text-lg"
           >
             Calculate Manually
           </a>

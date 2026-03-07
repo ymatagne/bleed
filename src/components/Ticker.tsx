@@ -25,15 +25,15 @@ export default function Ticker() {
   const isInView = useInView(ref, { once: true });
 
   return (
-    <section ref={ref} className="py-4 border-y border-border overflow-hidden bg-surface">
+    <section ref={ref} className="py-4 border-y border-border-light overflow-hidden bg-loop-deep">
       <motion.div
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : {}}
         className="flex animate-ticker whitespace-nowrap"
       >
         {stats.map((stat, i) => (
-          <span key={i} className="inline-flex items-center mx-8 text-sm text-text-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-blood mr-3 shrink-0" />
+          <span key={i} className="inline-flex items-center mx-8 text-sm text-white/70">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-green mr-3 shrink-0" />
             {stat}
           </span>
         ))}

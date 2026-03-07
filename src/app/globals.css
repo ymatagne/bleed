@@ -1,29 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --color-blood: #dc2626;
-  --color-blood-dark: #991b1b;
-  --color-blood-light: #ef4444;
-  --color-blood-glow: rgba(220, 38, 38, 0.15);
-  --color-surface: #0a0a0a;
-  --color-surface-light: #141414;
-  --color-surface-lighter: #1a1a1a;
-  --color-border: #262626;
-  --color-text: #fafafa;
-  --color-text-muted: #a3a3a3;
-  --color-text-dim: #525252;
+  --color-loop: #004639;
+  --color-loop-deep: #01251e;
+  --color-loop-dark: #003028;
+  --color-accent-blue: #99E5FD;
+  --color-accent-green: #C4F6C6;
+  --color-accent-soft: #a4d1ea;
+  --color-surface: #f8fafa;
+  --color-surface-white: #ffffff;
+  --color-surface-tint: #eef7f5;
+  --color-surface-dark: #e8f0ee;
+  --color-border: #d4e0dc;
+  --color-border-light: #e8eeec;
+  --color-text: #1d1d1d;
+  --color-text-secondary: #222222;
+  --color-text-muted: #5a6b65;
+  --color-text-dim: #8a9a94;
+  --color-danger: #c53030;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 html {
   scroll-behavior: smooth;
-  background: #000;
-  color-scheme: dark;
+  background: #fff;
 }
 
 body {
-  background: #000;
+  background: #ffffff;
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -31,8 +36,8 @@ body {
 }
 
 ::selection {
-  background: rgba(220, 38, 38, 0.4);
-  color: white;
+  background: rgba(0, 70, 57, 0.2);
+  color: var(--color-loop-deep);
 }
 
 /* Scrollbar */
@@ -43,7 +48,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #c4d4ce;
   border-radius: 3px;
 }
 
@@ -59,41 +64,21 @@ body {
 
 /* Pulse glow */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.4); }
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 70, 57, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(0, 70, 57, 0.3); }
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
-/* Blood drip */
-@keyframes drip {
-  0% { transform: scaleY(0); opacity: 0; }
-  50% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
-}
-
 /* Upload zone */
 .upload-zone {
-  border: 2px dashed #333;
+  border: 2px dashed #c4d4ce;
   transition: all 0.3s ease;
 }
 .upload-zone:hover,
 .upload-zone.dragging {
-  border-color: var(--color-blood);
-  background: var(--color-blood-glow);
-}
-
-/* Report styling */
-.report-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-/* Number counter animation */
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  border-color: var(--color-loop);
+  background: rgba(0, 70, 57, 0.04);
 }

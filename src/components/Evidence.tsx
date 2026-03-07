@@ -31,22 +31,21 @@ export default function Evidence() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section ref={ref} className="py-24 px-6">
+    <section ref={ref} className="py-24 px-6 bg-surface">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            The evidence is <span className="text-blood">damning</span>.
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-loop-deep">
+            The evidence is <span className="text-danger">damning</span>.
           </h2>
           <p className="text-text-muted max-w-2xl mx-auto">
             This isn&apos;t a conspiracy theory. These are publicly available numbers the banks hope you never look at.
           </p>
         </motion.div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
           {stats.map((stat, i) => (
             <motion.div
@@ -54,15 +53,14 @@ export default function Evidence() {
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: i * 0.1 }}
-              className="bg-surface-light border border-border rounded-xl p-6 text-center"
+              className="bg-white border border-border rounded-xl p-6 text-center"
             >
-              <p className="text-3xl sm:text-4xl font-bold text-blood">{stat.value}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-loop">{stat.value}</p>
               <p className="text-sm text-text-muted mt-2">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Quotes */}
         <div className="space-y-6">
           {quotes.map((quote, i) => (
             <motion.div
@@ -70,9 +68,9 @@ export default function Evidence() {
               initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
               animate={isInView ? { opacity: 1, x: 0 } : {}}
               transition={{ delay: 0.3 + i * 0.1 }}
-              className="bg-surface border border-border rounded-xl p-6 relative"
+              className="bg-white border border-border rounded-xl p-6 relative"
             >
-              <Quote className="w-8 h-8 text-blood/20 absolute top-4 right-4" />
+              <Quote className="w-8 h-8 text-loop/15 absolute top-4 right-4" />
               <p className="text-text-muted leading-relaxed italic pr-10">&ldquo;{quote.text}&rdquo;</p>
               <p className="text-sm text-text-dim mt-3">— {quote.source}</p>
             </motion.div>

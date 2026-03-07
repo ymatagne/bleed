@@ -17,13 +17,13 @@ export default function Nav() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-black/80 backdrop-blur-xl border-b border-border" : ""
+        scrolled ? "bg-white/80 backdrop-blur-xl border-b border-border-light shadow-sm" : ""
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-blood animate-pulse" />
-          <span className="font-bold text-lg tracking-tight">bleed</span>
+          <div className="w-2 h-2 rounded-full bg-loop animate-pulse" />
+          <span className="font-bold text-lg tracking-tight text-loop-deep">bleed</span>
           <span className="text-xs text-text-dim">by Loop</span>
         </a>
         <div className="flex items-center gap-6">
@@ -34,7 +34,7 @@ export default function Nav() {
             href="https://bankonloop.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm px-4 py-2 bg-blood hover:bg-blood-light text-white rounded-lg transition-colors"
+            className="text-sm px-4 py-2 bg-loop hover:bg-loop-dark text-white rounded-lg transition-colors"
           >
             Switch to Loop
           </a>

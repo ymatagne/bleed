@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MISTRAL_API = "https://api.mistral.ai/v1/chat/completions";
+const MISTRAL_OCR_API = "https://api.mistral.ai/v1/ocr";
+const MISTRAL_CHAT_API = "https://api.mistral.ai/v1/chat/completions";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.MISTRAL_API_KEY;
@@ -16,59 +17,46 @@ export async function POST(req: NextRequest) {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (ext === "pdf") {
-      return NextResponse.json(
-        { error: "PDF files are not yet supported. Please upload an image (JPG, PNG, WEBP) of your bank statement." },
-        { status: 400 }
-      );
-    }
-
-    const mimeMap: Record<string, string> = {
-      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
-    };
-    const mime = mimeMap[ext || ""] || "image/jpeg";
-
     const buf = Buffer.from(await file.arrayBuffer());
     const b64 = buf.toString("base64");
+
+    // Determine MIME and OCR document type
+    const isPdf = ext === "pdf";
+    const mimeMap: Record<string, string> = {
+      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf",
+    };
+    const mime = mimeMap[ext || ""] || "image/jpeg";
     const dataUrl = `data:${mime};base64,${b64}`;
 
-    // Step 1: OCR — extract text from the bank statement image
-    const ocrRes = await fetch(MISTRAL_API, {
+    // Step 1: OCR via Mistral Document AI endpoint (supports PDF + images)
+    const ocrBody = isPdf
+      ? { model: "mistral-ocr-latest", document: { type: "document_url", document_url: dataUrl } }
+      : { model: "mistral-ocr-latest", document: { type: "image_url", image_url: dataUrl } };
+
+    const ocrRes = await fetch(MISTRAL_OCR_API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "pixtral-large-latest",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: dataUrl } },
-              {
-                type: "text",
-                text: `Extract ALL text from this bank statement image. Include every transaction, date, amount, description, exchange rate, fee, and any other financial details. Be thorough — capture everything visible.`,
-              },
-            ],
-          },
-        ],
-        max_tokens: 8000,
-      }),
+      body: JSON.stringify(ocrBody),
     });
 
     if (!ocrRes.ok) {
       const err = await ocrRes.text();
       console.error("Mistral OCR error:", err);
-      return NextResponse.json({ error: "Failed to process image with OCR" }, { status: 502 });
+      return NextResponse.json({ error: "Failed to process document with OCR" }, { status: 502 });
     }
 
     const ocrData = await ocrRes.json();
-    const extractedText = ocrData.choices?.[0]?.message?.content || "";
+    // Mistral OCR returns pages[] with markdown content
+    const extractedText = ocrData.pages
+      ?.map((p: { markdown?: string }) => p.markdown || "")
+      .join("\n\n") || "";
 
     if (!extractedText || extractedText.length < 20) {
       return NextResponse.json({ error: "Could not extract meaningful text from the image. Please upload a clearer bank statement." }, { status: 422 });
     }
 
     // Step 2: Analyze the extracted text for FX fees
-    const analysisRes = await fetch(MISTRAL_API, {
+    const analysisRes = await fetch(MISTRAL_CHAT_API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({

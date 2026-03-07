@@ -5,20 +5,27 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-const mockAudit = {
-  transactions: [
-    { date: "2024-12-03", description: "USD Wire Transfer", amount: 15420.00, bankRate: 1.3845, midMarket: 1.3520, markup: 2.40, fee: 370.08 },
-    { date: "2024-12-07", description: "EUR Payment", amount: 8750.00, bankRate: 1.4890, midMarket: 1.4555, markup: 2.30, fee: 293.13 },
-    { date: "2024-12-12", description: "GBP Transfer", amount: 22100.00, bankRate: 1.7250, midMarket: 1.6830, markup: 2.50, fee: 928.20 },
-    { date: "2024-12-15", description: "USD Wire Transfer", amount: 6300.00, bankRate: 1.3860, midMarket: 1.3525, markup: 2.48, fee: 211.05 },
-    { date: "2024-12-19", description: "EUR Payment", amount: 31200.00, bankRate: 1.4910, midMarket: 1.4560, markup: 2.40, fee: 1092.00 },
-    { date: "2024-12-23", description: "USD Payment", amount: 4800.00, bankRate: 1.3870, midMarket: 1.3530, markup: 2.51, fee: 163.20 },
-  ],
-  totalFees: 3057.66,
-  avgMarkup: 2.45,
-  annualProjection: 36691.92,
-  loopSavings: 29353.54,
-};
+interface AuditTransaction {
+  date: string;
+  description: string;
+  amount: number;
+  bankRate: number;
+  midMarket: number;
+  markup: number;
+  fee: number;
+}
+
+interface AuditResult {
+  transactions: AuditTransaction[];
+  wireFees: number;
+  totalFees: number;
+  avgMarkup: number;
+  annualProjection: number;
+  loopSavings: number;
+  statementPeriod?: string;
+  currency?: string;
+  bankName?: string;
+}
 
 const banks = [
   { name: "RBC Royal Bank", markup: 2.5 },
@@ -34,7 +41,8 @@ function ScanTab() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<typeof mockAudit | null>(null);
+  const [result, setResult] = useState<AuditResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -43,19 +51,46 @@ function ScanTab() {
     if (f) processFile(f);
   }, []);
 
-  const processFile = (f: File) => {
+  const processFile = async (f: File) => {
     setFile(f);
     setAnalyzing(true);
-    setTimeout(() => {
+    setError(null);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", f);
+
+      const res = await fetch("/api/scan", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong analyzing your statement.");
+        setAnalyzing(false);
+        return;
+      }
+
+      setResult(data as AuditResult);
+    } catch {
+      setError("Failed to connect to the analysis service. Please try again.");
+    } finally {
       setAnalyzing(false);
-      setResult(mockAudit);
-    }, 3000);
+    }
   };
 
-  if (result) return <AuditReport data={result} onReset={() => { setFile(null); setResult(null); }} />;
+  if (result) return <AuditReport data={result} onReset={() => { setFile(null); setResult(null); setError(null); }} />;
 
   return (
     <div className="space-y-6">
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-danger/10 border border-danger/20 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-danger font-medium">{error}</p>
+            <button onClick={() => { setError(null); setFile(null); }} className="text-xs text-danger/70 underline mt-1">Try again</button>
+          </div>
+        </motion.div>
+      )}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -66,7 +101,7 @@ function ScanTab() {
         <input
           id="file-input"
           type="file"
-          accept=".pdf,.png,.jpg,.jpeg"
+          accept=".pdf,.png,.jpg,.jpeg,.webp"
           className="hidden"
           onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
         />
@@ -114,7 +149,7 @@ function ScanTab() {
   );
 }
 
-function AuditReport({ data, onReset }: { data: typeof mockAudit; onReset: () => void }) {
+function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       {/* Report Header */}

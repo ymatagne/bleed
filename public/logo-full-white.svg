@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64">
+  <defs>
+    <mask id="slash">
+      <rect width="200" height="64" fill="white"/>
+      <line x1="10" y1="48" x2="54" y2="32" stroke="black" stroke-width="3" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <!-- Logo mark -->
+  <path d="M32.5 5C32.5 5 13 27.5 13 41C13 51.77 21.73 60.5 32.5 60.5C43.27 60.5 52 51.77 52 41C52 27.5 32.5 5 32.5 5Z" fill="white" mask="url(#slash)"/>
+  <!-- Wordmark -->
+  <text x="62" y="44" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="30" font-weight="700" letter-spacing="-1" fill="white">bleed</text>
+</svg>

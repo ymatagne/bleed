@@ -34,7 +34,16 @@ export async function GET(req: NextRequest) {
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "40px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <svg width="36" height="36" viewBox="0 0 64 64" fill="none">
+              <defs>
+                <mask id="s">
+                  <rect width="64" height="64" fill="white"/>
+                  <line x1="10" y1="48" x2="54" y2="32" stroke="black" strokeWidth="3" strokeLinecap="round"/>
+                </mask>
+              </defs>
+              <path d="M32.5 5C32.5 5 13 27.5 13 41C13 51.77 21.73 60.5 32.5 60.5C43.27 60.5 52 51.77 52 41C52 27.5 32.5 5 32.5 5Z" fill="#C4F6C6" mask="url(#s)"/>
+            </svg>
             <span style={{ fontSize: "42px", fontWeight: 800, color: "#C4F6C6", letterSpacing: "-1px" }}>bleed</span>
             <span style={{ fontSize: "20px", color: "rgba(255,255,255,0.5)" }}>by Loop</span>
           </div>

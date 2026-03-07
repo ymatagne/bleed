@@ -24,7 +24,7 @@ export default function Nav() {
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-loop animate-pulse" />
+          <img src="/logo.svg" alt="Bleed" className="h-7 w-auto" />
           <span className="font-bold text-lg tracking-tight text-loop-deep">bleed</span>
           <span className="text-xs text-text-dim">by Loop</span>
         </a>

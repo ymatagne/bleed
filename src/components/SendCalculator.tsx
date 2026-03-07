@@ -1,41 +1,67 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Currency =
-  | "USD" | "EUR" | "GBP" | "AUD"
-  | "MXN" | "BRL"
-  | "JPY" | "CNY" | "HKD" | "SGD" | "INR" | "PHP"
-  | "NGN" | "KES" | "ZAR" | "AED"
-  | "CHF";
+/* ── Currency metadata ── */
 
-const CURRENCY_META: { label: string; group: string; flag: string; code: Currency }[] = [
+interface CurrencyInfo {
+  code: string;
+  label: string;
+  group: string;
+  flag: string;
+}
+
+const ALL_CURRENCIES: CurrencyInfo[] = [
   // Popular
   { code: "USD", label: "US Dollar", group: "Popular", flag: "🇺🇸" },
   { code: "EUR", label: "Euro", group: "Popular", flag: "🇪🇺" },
   { code: "GBP", label: "British Pound", group: "Popular", flag: "🇬🇧" },
   { code: "AUD", label: "Australian Dollar", group: "Popular", flag: "🇦🇺" },
+  { code: "NZD", label: "New Zealand Dollar", group: "Popular", flag: "🇳🇿" },
   // Americas
   { code: "MXN", label: "Mexican Peso", group: "Americas", flag: "🇲🇽" },
-  { code: "BRL", label: "Brazilian Real", group: "Americas", flag: "🇧🇷" },
+  // Europe
+  { code: "CHF", label: "Swiss Franc", group: "Europe", flag: "🇨🇭" },
+  { code: "DKK", label: "Danish Krone", group: "Europe", flag: "🇩🇰" },
+  { code: "SEK", label: "Swedish Krona", group: "Europe", flag: "🇸🇪" },
+  { code: "NOK", label: "Norwegian Krone", group: "Europe", flag: "🇳🇴" },
+  { code: "PLN", label: "Polish Zloty", group: "Europe", flag: "🇵🇱" },
+  { code: "CZK", label: "Czech Koruna", group: "Europe", flag: "🇨🇿" },
+  { code: "HUF", label: "Hungarian Forint", group: "Europe", flag: "🇭🇺" },
+  { code: "RON", label: "Romanian Leu", group: "Europe", flag: "🇷🇴" },
+  { code: "BGN", label: "Bulgarian Lev", group: "Europe", flag: "🇧🇬" },
+  { code: "HRK", label: "Croatian Kuna", group: "Europe", flag: "🇭🇷" },
+  { code: "TRY", label: "Turkish Lira", group: "Europe", flag: "🇹🇷" },
   // Asia Pacific
   { code: "JPY", label: "Japanese Yen", group: "Asia Pacific", flag: "🇯🇵" },
   { code: "CNY", label: "Chinese Yuan", group: "Asia Pacific", flag: "🇨🇳" },
   { code: "HKD", label: "Hong Kong Dollar", group: "Asia Pacific", flag: "🇭🇰" },
   { code: "SGD", label: "Singapore Dollar", group: "Asia Pacific", flag: "🇸🇬" },
   { code: "INR", label: "Indian Rupee", group: "Asia Pacific", flag: "🇮🇳" },
+  { code: "IDR", label: "Indonesian Rupiah", group: "Asia Pacific", flag: "🇮🇩" },
+  { code: "MYR", label: "Malaysian Ringgit", group: "Asia Pacific", flag: "🇲🇾" },
   { code: "PHP", label: "Philippine Peso", group: "Asia Pacific", flag: "🇵🇭" },
-  // Africa & Middle East
-  { code: "NGN", label: "Nigerian Naira", group: "Africa & Middle East", flag: "🇳🇬" },
-  { code: "KES", label: "Kenyan Shilling", group: "Africa & Middle East", flag: "🇰🇪" },
-  { code: "ZAR", label: "South African Rand", group: "Africa & Middle East", flag: "🇿🇦" },
-  { code: "AED", label: "UAE Dirham", group: "Africa & Middle East", flag: "🇦🇪" },
-  // Europe
-  { code: "CHF", label: "Swiss Franc", group: "Europe", flag: "🇨🇭" },
+  { code: "THB", label: "Thai Baht", group: "Asia Pacific", flag: "🇹🇭" },
+  // Middle East
+  { code: "AED", label: "UAE Dirham", group: "Middle East", flag: "🇦🇪" },
+  { code: "BHD", label: "Bahraini Dinar", group: "Middle East", flag: "🇧🇭" },
+  { code: "KWD", label: "Kuwaiti Dinar", group: "Middle East", flag: "🇰🇼" },
+  { code: "OMR", label: "Omani Rial", group: "Middle East", flag: "🇴🇲" },
+  { code: "QAR", label: "Qatari Riyal", group: "Middle East", flag: "🇶🇦" },
+  { code: "SAR", label: "Saudi Riyal", group: "Middle East", flag: "🇸🇦" },
+  { code: "ILS", label: "Israeli Shekel", group: "Middle East", flag: "🇮🇱" },
+  // Africa
+  { code: "KES", label: "Kenyan Shilling", group: "Africa", flag: "🇰🇪" },
+  { code: "UGX", label: "Ugandan Shilling", group: "Africa", flag: "🇺🇬" },
+  { code: "ZAR", label: "South African Rand", group: "Africa", flag: "🇿🇦" },
 ];
 
-const CURRENCY_GROUPS = ["Popular", "Americas", "Asia Pacific", "Africa & Middle East", "Europe"];
+const CURRENCY_GROUPS = ["Popular", "Americas", "Europe", "Asia Pacific", "Middle East", "Africa"];
+
+const FLAG_MAP: Record<string, string> = Object.fromEntries(ALL_CURRENCIES.map((c) => [c.code, c.flag]));
+
+/* ── Providers ── */
 
 interface Provider {
   name: string;
@@ -68,7 +94,7 @@ const LOOP_PLANS: Provider[] = [
 
 const ALL_PROVIDERS = [...BANKS, ...FINTECHS, ...LOOP_PLANS];
 
-const FLAG_MAP: Record<string, string> = Object.fromEntries(CURRENCY_META.map((c) => [c.code, c.flag]));
+/* ── Helpers ── */
 
 function formatNum(n: number, decimals = 2) {
   return n.toLocaleString("en-CA", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -106,13 +132,28 @@ function rowBg(kind: Provider["kind"]): string {
   }
 }
 
+/* ── Component ── */
+
 export default function SendCalculator() {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("10000");
-  const [currency, setCurrency] = useState<Currency>("USD");
+  const [currency, setCurrency] = useState("USD");
   const [rates, setRates] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Filter currencies to only those available in fetched rates
+  const availableCurrencies = useMemo(() => {
+    if (!rates) return ALL_CURRENCIES;
+    return ALL_CURRENCIES.filter((c) => rates[c.code] != null);
+  }, [rates]);
+
+  // Reset currency if current selection isn't available
+  useEffect(() => {
+    if (rates && rates[currency] == null && availableCurrencies.length > 0) {
+      setCurrency(availableCurrencies[0].code);
+    }
+  }, [rates, currency, availableCurrencies]);
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -127,7 +168,8 @@ export default function SendCalculator() {
       const data = await res.json();
       setRates(data.rates);
     } catch {
-      setRates({ USD: 0.735, EUR: 0.68, GBP: 0.585, AUD: 1.1, MXN: 12.5, BRL: 3.6, JPY: 110, CNY: 5.2, HKD: 5.7, SGD: 0.98, INR: 60, PHP: 40, NGN: 530, KES: 100, ZAR: 13, AED: 2.7, CHF: 0.65 });
+      // Minimal fallback for major currencies
+      setRates({ USD: 0.735, EUR: 0.68, GBP: 0.585, AUD: 1.1, MXN: 12.5, JPY: 110, CHF: 0.65 });
     } finally {
       setLoading(false);
     }
@@ -148,9 +190,9 @@ export default function SendCalculator() {
   }, [open]);
 
   const numAmount = parseFloat(amount.replace(/,/g, "")) || 0;
-  const midRate = rates ? 1 / rates[currency] : 0;
+  const midRate = rates && rates[currency] != null ? 1 / rates[currency] : 0;
 
-  const results: Result[] = rates && numAmount > 0
+  const results: Result[] = rates && numAmount > 0 && midRate > 0
     ? ALL_PROVIDERS.map((p) => calculate(numAmount, midRate, p)).sort((a, b) => b.recipientGets - a.recipientGets)
     : [];
 
@@ -163,6 +205,9 @@ export default function SendCalculator() {
   const savings = bestLoop && worstBank ? bestLoop.recipientGets - worstBank.recipientGets : 0;
 
   const currencyFlag = FLAG_MAP[currency] || "";
+
+  // Only render groups that have available currencies
+  const activeGroups = CURRENCY_GROUPS.filter((g) => availableCurrencies.some((c) => c.group === g));
 
   return (
     <>
@@ -220,18 +265,18 @@ export default function SendCalculator() {
                       />
                     </div>
                   </div>
-                  <div className="w-40">
+                  <div className="w-44">
                     <label className="text-xs font-medium text-gray-500 mb-1 block">They get</label>
                     <select
                       value={currency}
-                      onChange={(e) => setCurrency(e.target.value as Currency)}
+                      onChange={(e) => setCurrency(e.target.value)}
                       className="w-full py-2.5 px-3 border border-gray-200 rounded-lg text-base font-semibold text-[#01251e] focus:outline-none focus:ring-2 focus:ring-[#004639]/30 focus:border-[#004639] bg-white"
                     >
-                      {CURRENCY_GROUPS.map((group) => (
+                      {activeGroups.map((group) => (
                         <optgroup key={group} label={group}>
-                          {CURRENCY_META.filter((c) => c.group === group).map((c) => (
+                          {availableCurrencies.filter((c) => c.group === group).map((c) => (
                             <option key={c.code} value={c.code}>
-                              {c.flag} {c.code}
+                              {c.flag} {c.code} — {c.label}
                             </option>
                           ))}
                         </optgroup>
@@ -239,8 +284,8 @@ export default function SendCalculator() {
                     </select>
                   </div>
                 </div>
-                {rates && (
-                  <p className="text-xs text-gray-400 mt-2">Mid-market rate: 1 CAD = {rates[currency]?.toFixed(4)} {currency}</p>
+                {rates && rates[currency] != null && (
+                  <p className="text-xs text-gray-400 mt-2">Mid-market rate: 1 CAD = {rates[currency].toFixed(4)} {currency}</p>
                 )}
               </div>
 

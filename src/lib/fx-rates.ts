@@ -11,12 +11,14 @@ const APIS = [
   "https://api.exchangerate-api.com/v4/latest/CAD",
 ];
 
+/** Full CurrencyCloud payout currencies (excluding CAD since that's the source) */
 export const SUPPORTED_CURRENCIES = [
-  "USD", "EUR", "GBP", "AUD",
-  "MXN", "BRL",
-  "JPY", "CNY", "HKD", "SGD", "INR", "PHP",
-  "NGN", "KES", "ZAR", "AED",
-  "CHF",
+  "USD", "EUR", "GBP", "AUD", "NZD",
+  "MXN",
+  "CHF", "DKK", "SEK", "NOK", "PLN", "CZK", "HUF", "RON", "BGN", "HRK", "TRY",
+  "JPY", "CNY", "HKD", "SGD", "INR", "IDR", "MYR", "PHP", "THB",
+  "AED", "BHD", "KWD", "OMR", "QAR", "SAR", "ILS",
+  "KES", "UGX", "ZAR",
 ] as const;
 
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];

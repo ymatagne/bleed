@@ -11,6 +11,16 @@ const APIS = [
   "https://api.exchangerate-api.com/v4/latest/CAD",
 ];
 
+export const SUPPORTED_CURRENCIES = [
+  "USD", "EUR", "GBP", "AUD",
+  "MXN", "BRL",
+  "JPY", "CNY", "HKD", "SGD", "INR", "PHP",
+  "NGN", "KES", "ZAR", "AED",
+  "CHF",
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
 async function fetchRates(): Promise<Record<string, number>> {
   for (const url of APIS) {
     try {

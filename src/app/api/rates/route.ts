@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
-import { getMidMarketRates } from "@/lib/fx-rates";
+import { getMidMarketRates, SUPPORTED_CURRENCIES } from "@/lib/fx-rates";
 
 export async function GET() {
   try {
-    const rates = await getMidMarketRates();
+    const allRates = await getMidMarketRates();
+    const rates: Record<string, number> = {};
+    for (const c of SUPPORTED_CURRENCIES) {
+      if (allRates[c] != null) rates[c] = allRates[c];
+    }
     return NextResponse.json({
       base: "CAD",
-      rates: {
-        USD: rates.USD,
-        EUR: rates.EUR,
-        GBP: rates.GBP,
-        MXN: rates.MXN,
-        INR: rates.INR,
-        JPY: rates.JPY,
-      },
+      rates,
       timestamp: new Date().toISOString(),
     });
   } catch {

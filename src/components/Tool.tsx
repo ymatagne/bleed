@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import AnimatedNumber from "./AnimatedNumber";
+import ProjectionCharts from "./Charts";
 
 interface Finding {
   category: string;
@@ -330,6 +331,9 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           </p>
         </motion.div>
       </div>
+
+      {/* Projection Charts */}
+      <ProjectionCharts summary={data.summary} />
 
       {/* Findings */}
       <div className="bg-white border border-border rounded-xl overflow-hidden">

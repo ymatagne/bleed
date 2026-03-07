@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2 } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import AnimatedNumber from "./AnimatedNumber";
 
 interface Finding {
   category: string;
@@ -189,6 +190,53 @@ const priorityColors: Record<string, string> = {
   low: "bg-loop/5 text-loop border-loop/20",
 };
 
+const formatCurrencyAnim = (n: number) => formatCurrency(Math.round(n));
+
+function ShareButtons({ data }: { data: AuditResult }) {
+  const [copied, setCopied] = useState(false);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const shareUrl = `${baseUrl}?bankName=${encodeURIComponent(data.bankName)}&totalFees=${data.summary.totalFeesFound}&annualProjection=${data.summary.annualProjection}&annualSavings=${data.summary.annualSavings}&findingsCount=${data.findings.length}`;
+  const savings = formatCurrency(data.summary.annualProjection);
+  const shareText = `My bank is charging me ${savings}/yr in hidden fees. See what yours is hiding →`;
+
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Share2 className="w-4 h-4 text-text-dim" />
+        <span className="text-sm font-semibold text-text-dim uppercase tracking-wider">Share your results</span>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-sm font-medium rounded-lg transition-colors">
+          <Linkedin className="w-4 h-4" /> LinkedIn
+        </a>
+        <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+          Post
+        </a>
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#1da851] text-white text-sm font-medium rounded-lg transition-colors">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+          WhatsApp
+        </a>
+        <button onClick={copyLink} className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-dark hover:bg-border text-text text-sm font-medium rounded-lg transition-colors">
+          {copied ? <Check className="w-4 h-4 text-loop" /> : <Copy className="w-4 h-4" />}
+          {copied ? "Copied!" : "Copy link"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
   const nothingFound = data.findings.length === 0 && data.summary.totalFeesFound === 0 && data.recommendations.length === 0;
 
@@ -242,23 +290,34 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Issues Found", value: data.findings.length.toString(), icon: AlertTriangle, accent: false },
-          { label: "Fees This Period", value: formatCurrency(data.summary.totalFeesFound), icon: DollarSign, accent: true },
-          { label: "Annual Projection", value: formatCurrency(data.summary.annualProjection), icon: BarChart3, accent: true },
-          { label: "You&apos;d Save / Year", value: formatCurrency(data.summary.annualSavings), icon: Shield, accent: false, green: true },
-        ].map((card) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-border rounded-xl p-4"
-          >
-            <card.icon className={`w-5 h-5 mb-2 ${card.green ? "text-loop" : card.accent ? "text-danger" : "text-loop"}`} />
-            <p className="text-xs text-text-dim uppercase tracking-wider">{card.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${card.green ? "text-loop" : card.accent ? "text-danger" : "text-loop-deep"}`}>{card.value}</p>
-          </motion.div>
-        ))}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
+          <AlertTriangle className="w-5 h-5 mb-2 text-loop" />
+          <p className="text-xs text-text-dim uppercase tracking-wider">Issues Found</p>
+          <p className="text-2xl font-bold mt-1 text-loop-deep">
+            <AnimatedNumber value={data.findings.length} format={(n) => Math.round(n).toString()} />
+          </p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
+          <DollarSign className="w-5 h-5 mb-2 text-danger" />
+          <p className="text-xs text-text-dim uppercase tracking-wider">Fees This Period</p>
+          <p className="text-2xl font-bold mt-1 text-danger">
+            <AnimatedNumber value={data.summary.totalFeesFound} format={formatCurrencyAnim} />
+          </p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
+          <BarChart3 className="w-5 h-5 mb-2 text-danger" />
+          <p className="text-xs text-text-dim uppercase tracking-wider">Annual Projection</p>
+          <p className="text-2xl font-bold mt-1 text-danger">
+            <AnimatedNumber value={data.summary.annualProjection} format={formatCurrencyAnim} />
+          </p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
+          <Shield className="w-5 h-5 mb-2 text-loop" />
+          <p className="text-xs text-text-dim uppercase tracking-wider">You&apos;d Save / Year</p>
+          <p className="text-2xl font-bold mt-1 text-loop">
+            <AnimatedNumber value={data.summary.annualSavings} format={formatCurrencyAnim} />
+          </p>
+        </motion.div>
       </div>
 
       {/* Findings */}
@@ -340,15 +399,15 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <p className="text-sm text-white/60">Your bank costs you</p>
-            <p className="text-3xl font-bold text-accent-blue">{formatCurrency(data.summary.annualProjection)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-3xl font-bold text-accent-blue"><AnimatedNumber value={data.summary.annualProjection} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
           <div>
             <p className="text-sm text-white/60">With Loop</p>
-            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.summary.loopAnnualCost)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-3xl font-bold text-accent-green"><AnimatedNumber value={data.summary.loopAnnualCost} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
           <div>
             <p className="text-sm text-white/60">You save</p>
-            <p className="text-3xl font-bold text-accent-green">{formatCurrency(data.summary.annualSavings)}<span className="text-sm text-white/50 font-normal">/yr</span></p>
+            <p className="text-3xl font-bold text-accent-green"><AnimatedNumber value={data.summary.annualSavings} format={formatCurrencyAnim} /><span className="text-sm text-white/50 font-normal">/yr</span></p>
           </div>
         </div>
 
@@ -379,6 +438,9 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>
+
+      {/* Share Buttons */}
+      <ShareButtons data={data} />
     </motion.div>
   );
 }

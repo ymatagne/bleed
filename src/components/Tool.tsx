@@ -150,6 +150,50 @@ function ScanTab() {
 }
 
 function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
+  const noFxFound = data.transactions.length === 0 && data.totalFees === 0;
+
+  if (noFxFound) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center py-8">
+        <div className="w-16 h-16 mx-auto bg-loop/10 rounded-full flex items-center justify-center">
+          <Check className="w-8 h-8 text-loop" />
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold text-loop-deep mb-2">No FX transactions found</h3>
+          <p className="text-text-muted max-w-md mx-auto">
+            This statement doesn&apos;t contain international or foreign currency transactions. 
+            Upload a statement that includes USD, EUR, or GBP payments to see your hidden FX fees.
+          </p>
+        </div>
+        {data.bankName && data.bankName !== "Unknown" && (
+          <p className="text-sm text-text-dim">
+            Detected bank: <span className="font-medium text-text">{data.bankName}</span>
+            {data.statementPeriod && data.statementPeriod !== "Unknown" && <> · {data.statementPeriod}</>}
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={onReset}
+            className="px-6 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors"
+          >
+            Upload another statement
+          </button>
+          <button
+            onClick={() => {
+              onReset();
+              // Switch to calculator tab
+              const calcBtn = document.querySelector('[data-tab="calc"]') as HTMLButtonElement;
+              calcBtn?.click();
+            }}
+            className="px-6 py-3 border border-border hover:border-loop text-text-muted hover:text-loop rounded-xl transition-colors"
+          >
+            Try the calculator instead
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       {/* Report Header */}
@@ -406,6 +450,7 @@ export default function Tool() {
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
+                data-tab={id}
                 onClick={() => setTab(id)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   tab === id ? "bg-loop text-white" : "text-text-muted hover:text-text"

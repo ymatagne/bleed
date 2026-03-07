@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
-import EmailGate from "./EmailGate";
-import ReferralChallenge from "./ReferralChallenge";
 import { useSignupModal } from "./SignupModalProvider";
 
 interface Finding {
@@ -73,8 +71,6 @@ function ScanTab() {
   const [progress, setProgress] = useState<string>("");
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
-  const [leadInfo, setLeadInfo] = useState<{ name: string; email: string; company: string } | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -112,25 +108,7 @@ function ScanTab() {
     }
   };
 
-  if (result && !unlocked) {
-    const nothingFound = result.findings.length === 0 && result.summary.totalFeesFound === 0;
-    if (nothingFound) {
-      // Skip email gate for clean statements
-      return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); setUnlocked(false); }} />;
-    }
-    return (
-      <EmailGate
-        issuesCount={result.findings.length}
-        annualProjection={result.summary.annualProjection}
-        onUnlock={(lead) => {
-          setLeadInfo(lead);
-          setUnlocked(true);
-        }}
-      />
-    );
-  }
-
-  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); setUnlocked(false); }} leadEmail={leadInfo?.email} />;
+  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); }} />;
 
   return (
     <div className="space-y-6">
@@ -237,6 +215,65 @@ const priorityColors: Record<string, string> = {
 
 const formatCurrencyAnim = (n: number) => formatCurrency(Math.round(n));
 
+/* ── Email Gate Form ── */
+function EmailGateForm({ onSubmit, loading }: { onSubmit: (data: { name: string; email: string; company: string }) => void; loading: boolean }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+    onSubmit({ name: name.trim(), email: email.trim(), company: company.trim() });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-loop-deep mb-1">Name *</label>
+        <input
+          type="text"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-4 py-2.5 border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-loop/30 focus:border-loop"
+          placeholder="Your name"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-loop-deep mb-1">Work Email *</label>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-4 py-2.5 border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-loop/30 focus:border-loop"
+          placeholder="you@company.com"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-loop-deep mb-1">Company</label>
+        <input
+          type="text"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          className="w-full px-4 py-2.5 border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-loop/30 focus:border-loop"
+          placeholder="Company name"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full px-6 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
+      >
+        {loading ? "Unlocking..." : "Unlock Full Report →"}
+      </button>
+      <p className="text-xs text-text-dim text-center">We&apos;ll send you a copy. No spam, ever.</p>
+    </form>
+  );
+}
+
+/* ── Share / Referral Buttons ── */
 function ShareButtons({ data }: { data: AuditResult }) {
   const [copied, setCopied] = useState(false);
 
@@ -270,7 +307,7 @@ function ShareButtons({ data }: { data: AuditResult }) {
           Post
         </a>
         <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#1da851] text-white text-sm font-medium rounded-lg transition-colors">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+          <MessageCircle className="w-4 h-4" />
           WhatsApp
         </a>
         <button onClick={copyLink} className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-dark hover:bg-border text-text text-sm font-medium rounded-lg transition-colors">
@@ -282,11 +319,101 @@ function ShareButtons({ data }: { data: AuditResult }) {
   );
 }
 
-function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset: () => void; leadEmail?: string }) {
+/* ── Referral Section ── */
+function ReferralSection({ data }: { data: AuditResult }) {
+  const [copied, setCopied] = useState(false);
+  const refCode = useMemo(() => {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }, []);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const referralUrl = `${baseUrl}?ref=${refCode}`;
+  const savings = formatCurrency(data.summary.annualSavings);
+  const msg = `I just found out my bank was charging me ${formatCurrency(data.summary.annualProjection)}/yr in hidden FX fees. I'm saving ${savings}/yr by switching to Loop. See what your bank is hiding:`;
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${msg} ${referralUrl}`)}`;
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralUrl)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(msg)}&url=${encodeURIComponent(referralUrl)}`;
+  const emailUrl = `mailto:?subject=${encodeURIComponent("Your bank might be hiding fees too")}&body=${encodeURIComponent(`${msg}\n\n${referralUrl}`)}`;
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(referralUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-[#01251e] to-[#004639] rounded-2xl p-6 text-white">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-full bg-[#C4F6C6]/20 flex items-center justify-center">
+          <span className="text-xl">🏆</span>
+        </div>
+        <div>
+          <h4 className="text-lg font-bold">Challenge a Friend</h4>
+          <p className="text-sm text-white/60">Think their bank is better? Prove it.</p>
+        </div>
+      </div>
+      <p className="text-sm text-white/70 mb-4">
+        Share this tool and help someone else discover how much their bank is really costing them. You&apos;re saving <span className="text-[#C4F6C6] font-bold">{savings}/yr</span> — they could too.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#1da851] text-white text-sm font-medium rounded-lg transition-colors">
+          <MessageCircle className="w-4 h-4" /> WhatsApp
+        </a>
+        <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-[#0A66C2] hover:bg-[#004182] text-white text-sm font-medium rounded-lg transition-colors">
+          <Linkedin className="w-4 h-4" /> LinkedIn
+        </a>
+        <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+          Post
+        </a>
+        <a href={emailUrl} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          <Mail className="w-4 h-4" /> Email
+        </a>
+        <button onClick={copyLink} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          {copied ? <Check className="w-4 h-4 text-[#C4F6C6]" /> : <Copy className="w-4 h-4" />}
+          {copied ? "Copied!" : "Copy Link"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Audit Report with Email Gate ── */
+function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
   const { openSignup } = useSignupModal();
+  const [unlocked, setUnlocked] = useState(false);
+  const [gateLoading, setGateLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const downloadPDF = async () => {
+  const nothingFound = data.findings.length === 0 && data.summary.totalFeesFound === 0 && data.recommendations.length === 0;
+
+  const handleEmailSubmit = async (formData: { name: string; email: string; company: string }) => {
+    setGateLoading(true);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          bankName: data.bankName,
+          totalFees: data.summary.totalFeesFound,
+          annualProjection: data.summary.annualProjection,
+        }),
+      });
+      setUnlocked(true);
+    } catch {
+      // Still unlock on error — don't punish user
+      setUnlocked(true);
+    } finally {
+      setGateLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
     setDownloading(true);
     try {
       const res = await fetch("/api/report", {
@@ -298,8 +425,10 @@ function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset:
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `bleed-audit-report-${new Date().toISOString().slice(0, 10)}.html`;
+      a.download = `loop-audit-${data.bankName.replace(/\s+/g, "-").toLowerCase()}.html`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
       // silently fail
@@ -307,7 +436,6 @@ function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset:
       setDownloading(false);
     }
   };
-  const nothingFound = data.findings.length === 0 && data.summary.totalFeesFound === 0 && data.recommendations.length === 0;
 
   if (nothingFound) {
     return (
@@ -346,7 +474,7 @@ function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset:
             <span className="text-sm font-mono text-danger uppercase tracking-wider">Banking Audit Report</span>
           </div>
           <h3 className="text-2xl font-bold text-loop-deep">
-            We found {data.findings.length} issue{data.findings.length !== 1 ? "s" : ""} in your statement.
+            We found {data.findings.length} issue{data.findings.length !== 1 ? "s" : ""} costing you {formatCurrency(data.summary.annualProjection)}/yr
           </h3>
           {data.bankName !== "Unknown" && (
             <p className="text-sm text-text-dim mt-1">{data.bankName} · {data.statementPeriod}</p>
@@ -357,7 +485,7 @@ function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset:
         </button>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards — always visible */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
           <AlertTriangle className="w-5 h-5 mb-2 text-loop" />
@@ -389,197 +517,240 @@ function AuditReport({ data, onReset, leadEmail }: { data: AuditResult; onReset:
         </motion.div>
       </div>
 
-      {/* Projection Charts */}
-      <ProjectionCharts summary={data.summary} plans={data.planComparison} />
-
-      {/* Findings */}
-      <div className="bg-white border border-border rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-border-light">
-          <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
-        </div>
-        <div className="divide-y divide-border-light">
-          {data.findings.map((finding, i) => {
-            const Icon = categoryIcons[finding.category] || DollarSign;
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="p-4 hover:bg-surface-tint transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon className="w-4 h-4 text-danger" />
+      {/* ── EMAIL GATE: Blurred content + form overlay ── */}
+      {!unlocked && (
+        <div className="relative">
+          {/* Blurred teaser of the report */}
+          <div className="filter blur-[8px] pointer-events-none select-none" aria-hidden="true">
+            <div className="bg-white border border-border rounded-xl p-4 mb-4">
+              <div className="h-6 bg-gray-200 rounded w-48 mb-3" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between py-2 border-b border-border-light">
+                    <div className="h-4 bg-gray-200 rounded w-64" />
+                    <div className="h-4 bg-red-100 rounded w-20" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-text-dim uppercase">{categoryLabels[finding.category] || finding.category}</span>
-                      {finding.date && <span className="text-xs text-text-dim">· {finding.date}</span>}
-                    </div>
-                    <p className="text-sm text-text font-medium">{finding.description}</p>
-                    <p className="text-sm text-loop mt-1">💡 Loop: {finding.loopAlternative}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
-                    {finding.savingsPerOccurrence > 0 && (
-                      <p className="text-xs text-loop">Save {formatCurrency(finding.savingsPerOccurrence)}</p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Recommendations */}
-      {data.recommendations.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">Recommendations</h4>
-          {data.recommendations.map((rec, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`border rounded-xl p-5 ${priorityColors[rec.priority]}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono uppercase">{rec.priority} priority</span>
-                  </div>
-                  <h5 className="font-semibold text-loop-deep">{rec.title}</h5>
-                  <p className="text-sm text-text-muted mt-1">{rec.description}</p>
-                </div>
-                {rec.estimatedAnnualSavings > 0 && (
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs text-text-dim">Est. annual savings</p>
-                    <p className="text-xl font-bold text-loop">{formatCurrency(rec.estimatedAnnualSavings)}</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Loop Plan Comparison */}
-      <div className="space-y-6">
-        <div className="text-center">
-          <h4 className="text-xl font-bold text-loop-deep mb-1">Your bank vs Loop</h4>
-          <p className="text-sm text-text-muted">Your bank costs you <span className="font-bold text-danger">{formatCurrency(data.summary.annualProjection)}/yr</span>. Here&apos;s what each Loop plan saves you.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(data.planComparison || []).map((plan, i) => {
-            const isRec = plan.recommended;
-            return (
-              <motion.div
-                key={plan.plan}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className={`relative rounded-2xl p-6 border-2 transition-all ${
-                  isRec
-                    ? "border-[#C4F6C6] bg-[#01251e] text-white scale-[1.03] shadow-[0_0_30px_rgba(196,246,198,0.3)]"
-                    : "border-border bg-white text-text"
-                }`}
-              >
-                {isRec && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#C4F6C6] text-[#004639] text-xs font-bold uppercase tracking-wider rounded-full">
-                    Recommended
-                  </div>
-                )}
-                <div className="mb-4">
-                  <h5 className={`text-lg font-bold ${isRec ? "text-white" : "text-loop-deep"}`}>{plan.plan}</h5>
-                  <p className={`text-sm ${isRec ? "text-white/60" : "text-text-dim"}`}>
-                    {plan.monthlyFee === 0 ? "Free" : `$${plan.monthlyFee}/mo`}
-                  </p>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  <div>
-                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>FX Rate</p>
-                    <p className={`text-lg font-bold ${isRec ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Cost on Plan</p>
-                    <p className={`text-lg font-bold ${isRec ? "text-white" : "text-text"}`}>{formatCurrency(plan.annualCostOnPlan)}</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Savings vs Bank</p>
-                    <p className={`text-2xl font-bold ${isRec ? "text-[#C4F6C6]" : "text-loop"}`}>{formatCurrency(plan.annualSavingsVsBank)}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={openSignup}
-                  className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl transition-all text-sm cursor-pointer ${
-                    isRec
-                      ? "bg-[#C4F6C6] text-[#004639] hover:brightness-110"
-                      : "bg-loop/10 text-loop hover:bg-loop/20"
-                  }`}
-                >
-                  Get Started <ArrowRight className="w-4 h-4" />
-                </button>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* What savings could buy — attached to recommended plan */}
-        {(() => {
-          const rec = (data.planComparison || []).find(p => p.recommended);
-          const savings = rec?.annualSavingsVsBank || data.summary.annualSavings;
-          if (savings <= 0) return null;
-          return (
-            <div className="bg-[#01251e] rounded-xl p-5 text-white">
-              <p className="text-sm text-white/60 mb-3">What {formatCurrency(savings)}/yr in savings could buy your business:</p>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  savings >= 50 ? `${Math.floor(savings / 50)} months of software tools` : null,
-                  savings >= 85 ? `${Math.floor(savings / 85)} hours of contractor work` : null,
-                  savings >= 500 ? `${Math.floor(savings / 500)} ad campaigns` : null,
-                ].filter(Boolean).map((item) => (
-                  <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
-                    {item}
-                  </span>
                 ))}
               </div>
             </div>
-          );
-        })()}
-      </div>
+            <ProjectionCharts summary={data.summary} plans={data.planComparison} />
+          </div>
 
-      {/* Download PDF */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <button
-          onClick={downloadPDF}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-loop hover:bg-loop-dark disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
-        >
-          {downloading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Download className="w-5 h-5" />
+          {/* Overlay form */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white border-2 border-loop/30 rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-loop/10 flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-loop" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-loop-deep">Unlock Your Full Report</h4>
+                  <p className="text-sm text-text-muted">See all findings, charts & savings breakdown</p>
+                </div>
+              </div>
+              <EmailGateForm onSubmit={handleEmailSubmit} loading={gateLoading} />
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Full report content (only shown after email gate) ── */}
+      {unlocked && (
+        <>
+          {/* Projection Charts */}
+          <ProjectionCharts summary={data.summary} plans={data.planComparison} />
+
+          {/* Findings */}
+          <div className="bg-white border border-border rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border-light">
+              <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
+            </div>
+            <div className="divide-y divide-border-light">
+              {data.findings.map((finding, i) => {
+                const Icon = categoryIcons[finding.category] || DollarSign;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="p-4 hover:bg-surface-tint transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Icon className="w-4 h-4 text-danger" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono text-text-dim uppercase">{categoryLabels[finding.category] || finding.category}</span>
+                          {finding.date && <span className="text-xs text-text-dim">· {finding.date}</span>}
+                        </div>
+                        <p className="text-sm text-text font-medium">{finding.description}</p>
+                        <p className="text-sm text-loop mt-1">💡 Loop: {finding.loopAlternative}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
+                        {finding.savingsPerOccurrence > 0 && (
+                          <p className="text-xs text-loop">Save {formatCurrency(finding.savingsPerOccurrence)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          {data.recommendations.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">Recommendations</h4>
+              {data.recommendations.map((rec, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`border rounded-xl p-5 ${priorityColors[rec.priority]}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-mono uppercase">{rec.priority} priority</span>
+                      </div>
+                      <h5 className="font-semibold text-loop-deep">{rec.title}</h5>
+                      <p className="text-sm text-text-muted mt-1">{rec.description}</p>
+                    </div>
+                    {rec.estimatedAnnualSavings > 0 && (
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-text-dim">Est. annual savings</p>
+                        <p className="text-xl font-bold text-loop">{formatCurrency(rec.estimatedAnnualSavings)}</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           )}
-          Download PDF Report
-        </button>
-        <button
-          onClick={openSignup}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-[#C4F6C6] text-[#004639] font-semibold rounded-xl hover:brightness-110 transition-all"
-        >
-          Open Free Loop Account <ArrowRight className="w-5 h-5" />
-        </button>
-      </div>
 
-      {/* Share Buttons */}
-      <ShareButtons data={data} />
+          {/* Loop Plan Comparison */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <h4 className="text-xl font-bold text-loop-deep mb-1">Your bank vs Loop</h4>
+              <p className="text-sm text-text-muted">Your bank costs you <span className="font-bold text-danger">{formatCurrency(data.summary.annualProjection)}/yr</span>. Here&apos;s what each Loop plan saves you.</p>
+            </div>
 
-      {/* Referral Challenge */}
-      <ReferralChallenge annualProjection={data.summary.annualProjection} bankName={data.bankName} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(data.planComparison || []).map((plan, i) => {
+                const isRec = plan.recommended;
+                return (
+                  <motion.div
+                    key={plan.plan}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`relative rounded-2xl p-6 border-2 transition-all ${
+                      isRec
+                        ? "border-[#C4F6C6] bg-[#01251e] text-white scale-[1.03] shadow-[0_0_30px_rgba(196,246,198,0.3)]"
+                        : "border-border bg-white text-text"
+                    }`}
+                  >
+                    {isRec && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#C4F6C6] text-[#004639] text-xs font-bold uppercase tracking-wider rounded-full">
+                        Recommended
+                      </div>
+                    )}
+                    <div className="mb-4">
+                      <h5 className={`text-lg font-bold ${isRec ? "text-white" : "text-loop-deep"}`}>{plan.plan}</h5>
+                      <p className={`text-sm ${isRec ? "text-white/60" : "text-text-dim"}`}>
+                        {plan.monthlyFee === 0 ? "Free" : `$${plan.monthlyFee}/mo`}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>FX Rate</p>
+                        <p className={`text-lg font-bold ${isRec ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</p>
+                      </div>
+                      <div>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Cost on Plan</p>
+                        <p className={`text-lg font-bold ${isRec ? "text-white" : "text-text"}`}>{formatCurrency(plan.annualCostOnPlan)}</p>
+                      </div>
+                      <div>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Savings vs Bank</p>
+                        <p className={`text-2xl font-bold ${isRec ? "text-[#C4F6C6]" : "text-loop"}`}>{formatCurrency(plan.annualSavingsVsBank)}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={openSignup}
+                      className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl transition-all text-sm ${
+                        isRec
+                          ? "bg-[#C4F6C6] text-[#004639] hover:brightness-110"
+                          : "bg-loop/10 text-loop hover:bg-loop/20"
+                      }`}
+                    >
+                      Get Started <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* What savings could buy */}
+            {(() => {
+              const rec = (data.planComparison || []).find(p => p.recommended);
+              const savings = rec?.annualSavingsVsBank || data.summary.annualSavings;
+              if (savings <= 0) return null;
+              return (
+                <div className="bg-[#01251e] rounded-xl p-5 text-white">
+                  <p className="text-sm text-white/60 mb-3">What {formatCurrency(savings)}/yr in savings could buy your business:</p>
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      savings >= 50 ? `${Math.floor(savings / 50)} months of software tools` : null,
+                      savings >= 85 ? `${Math.floor(savings / 85)} hours of contractor work` : null,
+                      savings >= 500 ? `${Math.floor(savings / 500)} ad campaigns` : null,
+                    ].filter(Boolean).map((item) => (
+                      <span key={item} className="text-sm px-3 py-1 bg-white/10 rounded-full text-white/80">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Referral Section */}
+          <ReferralSection data={data} />
+
+          {/* Share Buttons */}
+          <ShareButtons data={data} />
+
+          {/* Download Report + CTA */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button
+              onClick={handleDownloadReport}
+              disabled={downloading}
+              className="inline-flex items-center gap-2 px-6 py-3 border-2 border-loop text-loop hover:bg-loop/5 font-semibold rounded-xl transition-colors disabled:opacity-50"
+            >
+              <Download className="w-5 h-5" />
+              {downloading ? "Generating..." : "Download Report"}
+            </button>
+            <button
+              onClick={openSignup}
+              className="inline-flex items-center gap-2 px-8 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors text-lg"
+            >
+              Stop the Bleed — Switch to Loop
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }
@@ -608,7 +779,6 @@ function CalculatorTab() {
     return { ...plan, loopFxFees, monthlyTotal, monthlySavings, annualSavings: monthlySavings * 12 };
   });
 
-  // Auto-recommend: best net annual savings
   const bestIdx = planResults.reduce((best, p, i) => p.annualSavings > planResults[best].annualSavings ? i : best, 0);
 
   return (
@@ -644,7 +814,6 @@ function CalculatorTab() {
         </div>
       </div>
 
-      {/* Plan toggle */}
       <div>
         <div className="flex justify-center mb-6">
           <div className="inline-flex bg-white border border-border rounded-xl p-1">
@@ -729,7 +898,7 @@ function CalculatorTab() {
       <div className="text-center">
         <button
           onClick={openSignup}
-          className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg cursor-pointer"
+          className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg"
         >
           Start saving with Loop
           <ArrowRight className="w-5 h-5" />

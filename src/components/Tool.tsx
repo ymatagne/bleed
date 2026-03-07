@@ -673,16 +673,25 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
 
                     <div className="space-y-3 mb-6">
                       <div>
-                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>FX Rate</p>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>FX Markup</p>
                         <p className={`text-lg font-bold ${isRec ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</p>
                       </div>
                       <div>
-                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Cost on Plan</p>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>
+                          Total Annual Cost {plan.monthlyFee > 0 ? <span className="opacity-70">(incl. ${plan.monthlyFee}×12 plan fee)</span> : <span className="opacity-70">(no plan fee)</span>}
+                        </p>
                         <p className={`text-lg font-bold ${isRec ? "text-white" : "text-text"}`}>{formatCurrency(plan.annualCostOnPlan)}</p>
                       </div>
                       <div>
-                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>Annual Savings vs Bank</p>
-                        <p className={`text-2xl font-bold ${isRec ? "text-[#C4F6C6]" : "text-loop"}`}>{formatCurrency(plan.annualSavingsVsBank)}</p>
+                        <p className={`text-xs ${isRec ? "text-white/50" : "text-text-dim"}`}>You Save vs Your Bank</p>
+                        <p className={`text-2xl font-bold ${plan.annualSavingsVsBank > 0 ? (isRec ? "text-[#C4F6C6]" : "text-loop") : "text-danger"}`}>
+                          {plan.annualSavingsVsBank > 0 ? formatCurrency(plan.annualSavingsVsBank) : `-${formatCurrency(Math.abs(plan.annualSavingsVsBank))}`}
+                        </p>
+                        {plan.annualSavingsVsBank <= 0 && plan.monthlyFee > 0 && (
+                          <p className={`text-xs mt-1 ${isRec ? "text-white/50" : "text-text-dim"}`}>
+                            Plan fee exceeds savings at your current volume
+                          </p>
+                        )}
                       </div>
                     </div>
 

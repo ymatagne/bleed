@@ -44,10 +44,10 @@ function MonthlyBarChart({ data, plans }: { data: ChartData; plans: PlanComparis
   return (
     <div ref={ref} className="bg-white border border-border rounded-xl p-5">
       <h5 className="text-sm font-semibold uppercase tracking-wider text-text-dim mb-4">Monthly Cost Comparison</h5>
-      <div className="flex items-end gap-1 sm:gap-1.5 h-48">
+      <div className="flex items-end gap-1.5 sm:gap-2 h-56">
         {MONTHS.map((m, i) => (
           <div key={m} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-            <div className="flex gap-px w-full items-end flex-1">
+            <div className="flex gap-0.5 w-full items-end flex-1">
               {/* Bank bar */}
               <motion.div
                 className="rounded-t-sm"
@@ -63,7 +63,7 @@ function MonthlyBarChart({ data, plans }: { data: ChartData; plans: PlanComparis
                   className="rounded-t-sm"
                   style={{ flex: 1, minWidth: 2, backgroundColor: PLAN_COLORS[p.name] || "#004639" }}
                   initial={{ height: 0 }}
-                  animate={inView ? { height: `${Math.max((p.monthly / max) * 100, 1)}%` } : { height: 0 }}
+                  animate={inView ? { height: `${Math.max((p.monthly / max) * 100, 6)}%` } : { height: 0 }}
                   transition={{ duration: 0.6, delay: i * 0.04 + 0.1 }}
                 />
               ))}

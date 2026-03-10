@@ -216,7 +216,7 @@ export default function SendCalculator() {
       {/* Floating Action Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-6 z-40 bg-[#004639] hover:bg-[#01251e] text-white px-5 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center gap-2 text-sm font-semibold group"
+        className="fixed bottom-6 right-6 z-40 bg-[#004639] hover:bg-[#01251e] text-white px-5 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center gap-2 text-sm font-semibold group"
       >
         <span className="text-lg">💸</span>
         <span className="hidden sm:inline">Quick Calculate</span>

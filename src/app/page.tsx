@@ -30,7 +30,7 @@ export default function Home() {
       </main>
       <Footer />
       <SendCalculator />
-      <StickyCTA />
+      {/* <StickyCTA /> */}
     </SignupModalProvider>
   );
 }

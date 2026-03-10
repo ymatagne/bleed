@@ -281,7 +281,13 @@ Analyze and return ONLY this JSON (no markdown fences):
 
 For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. Recommend the plan where net savings (annualSavingsVsBank) are highest while the monthly fee is justified — for low FX volume (<$100K/yr) recommend Basic, medium ($100K-$500K/yr) recommend Plus, high (>$500K/yr) recommend Power. Only ONE plan should have recommended: true.
 
-IMPORTANT: Group similar fees into single findings. For example, if there are 3 wire transfer fees of $45 each, create ONE finding: 'Wire transfer fees: 3 transactions × $45 = $135' with amount: 135 and savingsPerOccurrence: 135. Do NOT create separate findings for each individual wire or each individual FX transaction. Group by category and summarize. This makes the report cleaner and more impactful. Aim for 3-8 grouped findings, not 20+ individual ones.
+CRITICAL GROUPING RULES — FOLLOW EXACTLY:
+- Group ALL similar fees into ONE finding per category. NEVER create two findings with the same category.
+- Account fees: If there are multiple account fees (e.g. USD account $30 + CAD account $30), create ONE finding: "Monthly account fees: 2 accounts × $30 = $60/mo" with amount: 60.
+- Wire fees: If there are 3 wires at $45 each, ONE finding: "Wire transfer fees: 3 × $45 = $135" with amount: 135.
+- FX markups: Group ALL foreign currency transactions into ONE "fx_markup" finding with the total markup cost.
+- Each category (account_fee, fx_markup, wire_fee, etransfer_fee, card_fee, other_fee) should appear AT MOST ONCE in findings.
+- Aim for 3-6 total findings. If you have more than 6, you're not grouping enough.
 
 MATH RULES - FOLLOW EXACTLY:
 - FX markup calculation: If bank rate is 1.3850 and mid-market is 1.3567, markup = (1.3850 - 1.3567) / 1.3567 = 2.09%. Cost on $10,000 USD = $10,000 × 2.09% = $209 CAD

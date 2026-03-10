@@ -163,6 +163,18 @@ export default function SendCalculator() {
     return () => window.removeEventListener("open-send-calculator", handler);
   }, []);
 
+  // Auto-open when navigated with ?calculator=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("calculator") === "true") {
+      setOpen(true);
+      // Clean up the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("calculator");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+  }, []);
+
   const fetchRates = useCallback(async () => {
     setLoading(true);
     try {

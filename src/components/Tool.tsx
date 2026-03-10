@@ -991,8 +991,8 @@ export default function Tool() {
           </motion.div>
         </AnimatePresence>
 
-        <p className="text-xs text-gray-400 text-center mt-8">
-          Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates.
+        <p className="text-xs text-text-dim text-center mt-8">
+          Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates. Actual rates may vary.
         </p>
       </div>
     </section>

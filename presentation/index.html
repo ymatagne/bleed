@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLEED — Hackathon Pitch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #01251e;
+    color: white;
+    overflow: hidden;
+  }
+  
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+  
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  h1 {
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1.05;
+    text-align: center;
+    letter-spacing: -2px;
+  }
+  
+  h2 {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    letter-spacing: -1.5px;
+  }
+  
+  h3 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+  }
+  
+  p {
+    font-size: 24px;
+    line-height: 1.6;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    max-width: 800px;
+  }
+  
+  .red { color: #ef4444; }
+  .green { color: #C4F6C6; }
+  .dim { color: rgba(255,255,255,0.4); }
+  .white { color: white; }
+  
+  .big-number {
+    font-size: 140px;
+    font-weight: 900;
+    letter-spacing: -5px;
+    line-height: 1;
+  }
+  
+  .medium-number {
+    font-size: 80px;
+    font-weight: 900;
+    letter-spacing: -3px;
+  }
+  
+  .stat-row {
+    display: flex;
+    gap: 60px;
+    margin-top: 40px;
+  }
+  
+  .stat {
+    text-align: center;
+  }
+  
+  .stat-value {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -2px;
+  }
+  
+  .stat-label {
+    font-size: 18px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 8px;
+  }
+  
+  .tag {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+  }
+  
+  .tag-red { background: rgba(239,68,68,0.2); color: #ef4444; }
+  .tag-green { background: rgba(196,246,198,0.15); color: #C4F6C6; }
+  
+  .list {
+    text-align: left;
+    max-width: 700px;
+  }
+  
+  .list li {
+    font-size: 28px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.8);
+    list-style: none;
+    padding-left: 30px;
+    position: relative;
+  }
+  
+  .list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: #C4F6C6;
+  }
+  
+  .logo {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    position: fixed;
+    bottom: 30px;
+    left: 40px;
+    color: rgba(255,255,255,0.15);
+    z-index: 100;
+  }
+  
+  .slide-num {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.2);
+    z-index: 100;
+  }
+  
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+    width: 100%;
+    max-width: 900px;
+  }
+  
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: left;
+  }
+  
+  .card h4 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  
+  .card p {
+    font-size: 16px;
+    text-align: left;
+    line-height: 1.5;
+  }
+  
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 50px;
+    max-width: 900px;
+    width: 100%;
+  }
+  
+  .timeline-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+  
+  .timeline-item::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    right: -50%;
+    width: 100%;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+  }
+  
+  .timeline-item:last-child::after { display: none; }
+  
+  .timeline-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #C4F6C6;
+    margin: 0 auto 12px;
+  }
+  
+  .timeline-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #C4F6C6;
+    margin-bottom: 4px;
+  }
+  
+  .timeline-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+  
+  .versus {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-top: 40px;
+  }
+  
+  .versus-side {
+    flex: 1;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+  }
+  
+  .versus-left {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+  
+  .versus-right {
+    background: rgba(196,246,198,0.1);
+    border: 1px solid rgba(196,246,198,0.2);
+  }
+  
+  .versus-vs {
+    font-size: 24px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+  
+  <!-- SLIDE 1: Title -->
+  <div class="slide active" data-slide="1">
+    <div class="tag tag-red">Growth Hackathon 2026</div>
+    <h1>Your bank is<br><span class="red">bleeding</span><br>you dry.</h1>
+    <p style="margin-top: 30px;">And we built the tool that proves it.</p>
+  </div>
+
+  <!-- SLIDE 2: The Problem -->
+  <div class="slide" data-slide="2">
+    <div class="tag tag-red">The Problem</div>
+    <h2>Canadian banks hide<br><span class="red">2.5–3%</span> on every<br>FX transaction.</h2>
+    <p style="margin-top: 30px;">They don't disclose it. They don't itemize it.<br>They just take it.</p>
+  </div>
+
+  <!-- SLIDE 3: The Scale -->
+  <div class="slide" data-slide="3">
+    <div class="tag tag-red">The Scale</div>
+    <div class="big-number red">$8.2B</div>
+    <h3 style="margin-top: 20px; color: rgba(255,255,255,0.6);">earned by Canada's Big 5 banks<br>in FX fees last year</h3>
+    <p style="margin-top: 30px;">And <strong class="white">73% of SMBs</strong> don't even know they're being charged.</p>
+  </div>
+
+  <!-- SLIDE 4: What We Built -->
+  <div class="slide" data-slide="4">
+    <div class="tag tag-green">The Solution</div>
+    <h1><span class="green">bleed</span></h1>
+    <h3 style="margin-top: 10px; color: rgba(255,255,255,0.6);">The free FX audit tool by Loop</h3>
+    <p style="margin-top: 30px;">Upload your bank statement. Our AI finds every hidden fee, calculates your annual losses, and shows you exactly how to stop the bleed.</p>
+  </div>
+
+  <!-- SLIDE 5: How It Works -->
+  <div class="slide" data-slide="5">
+    <div class="tag tag-green">How It Works</div>
+    <h2>3 steps. 30 seconds.</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">Upload</div>
+        <div class="timeline-desc">Drop your bank<br>statement (PDF/image)</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">AI Scan</div>
+        <div class="timeline-desc">We find every hidden<br>fee and FX markup</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">Report</div>
+        <div class="timeline-desc">See your losses +<br>how to save with Loop</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: The Output -->
+  <div class="slide" data-slide="6">
+    <div class="tag tag-green">The Output</div>
+    <h2>A report that makes<br>CFOs <span class="red">furious</span>.</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4 class="red">📊 Fee Breakdown</h4>
+        <p>Every hidden charge — FX markups, wire fees, account fees — itemized and annualized.</p>
+      </div>
+      <div class="card">
+        <h4 class="green">💰 Savings Projection</h4>
+        <p>Side-by-side comparison with Loop's rates. Shows exact annual savings per plan.</p>
+      </div>
+      <div class="card">
+        <h4 class="white">📄 PDF Export</h4>
+        <p>Branded, professional PDF. Ready to drop in a Slack channel or board deck.</p>
+      </div>
+      <div class="card">
+        <h4 class="white">🔗 Shareable Link</h4>
+        <p>One-click share to WhatsApp, LinkedIn, Twitter. Pre-written outrage included.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Why It's a Growth Hack -->
+  <div class="slide" data-slide="7">
+    <div class="tag tag-green">Why This Wins</div>
+    <h2>This isn't a tool.<br>It's a <span class="green">growth engine</span>.</h2>
+    <ul class="list" style="margin-top: 30px;">
+      <li>Every scan generates a <strong class="white">qualified lead</strong> (email-gated)</li>
+      <li>Every report creates <strong class="white">outrage</strong> → sharing</li>
+      <li>Every share brings <strong class="white">new users</strong> who scan</li>
+      <li>Every user who switches → <strong class="green">Loop revenue</strong></li>
+    </ul>
+  </div>
+
+  <!-- SLIDE 8: The Viral Loop -->
+  <div class="slide" data-slide="8">
+    <div class="tag tag-green">The Viral Loop</div>
+    <h2>Outrage is the<br>growth engine.</h2>
+    <p style="margin-top: 20px; font-size: 28px; color: rgba(255,255,255,0.8);">
+      Scan → <span class="red">"WTF my bank stole $23K?!"</span> → Share → New scan → Repeat
+    </p>
+    <p style="margin-top: 20px;">Nobody shares a fintech landing page.<br><strong class="white">Everyone shares proof they're being robbed.</strong></p>
+  </div>
+
+  <!-- SLIDE 9: SEO Moat -->
+  <div class="slide" data-slide="9">
+    <div class="tag tag-green">SEO Moat</div>
+    <h2>We own the long tail.</h2>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-value green">10</div>
+        <div class="stat-label">SEO blog posts</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value green">5</div>
+        <div class="stat-label">Bank landing pages</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value green">30+</div>
+        <div class="stat-label">Target keywords</div>
+      </div>
+    </div>
+    <p style="margin-top: 30px;">Every Canadian Googling "RBC FX fees" or "TD exchange rate markup" lands on <strong class="green">bleed</strong>.</p>
+  </div>
+
+  <!-- SLIDE 10: What We Built (Technical) -->
+  <div class="slide" data-slide="10">
+    <div class="tag tag-green">Built in One Sprint</div>
+    <h2>Shipped. Not slides.</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>🤖 AI Statement Scanner</h4>
+        <p>Reads PDF/image bank statements, extracts every FX transaction and fee.</p>
+      </div>
+      <div class="card">
+        <h4>📈 Live FX Rates</h4>
+        <p>Real-time mid-market rates to calculate exact bank markups.</p>
+      </div>
+      <div class="card">
+        <h4>🏦 5 Bank Pages</h4>
+        <p>SEO-optimized pages for RBC, TD, BMO, Scotiabank, CIBC.</p>
+      </div>
+      <div class="card">
+        <h4>📝 10 Blog Posts</h4>
+        <p>Keyword-targeted content driving organic traffic.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Versus -->
+  <div class="slide" data-slide="11">
+    <div class="tag tag-red">Before vs After</div>
+    <h2>The switch is obvious.</h2>
+    <div class="versus">
+      <div class="versus-side versus-left">
+        <h3 class="red" style="font-size: 28px;">Your Bank</h3>
+        <div class="medium-number red" style="margin-top: 15px;">2.5%</div>
+        <p style="margin-top: 10px; font-size: 18px;">markup on every transaction</p>
+        <p style="font-size: 16px; margin-top: 5px;">+ $25-50 wire fees</p>
+      </div>
+      <div class="versus-vs">VS</div>
+      <div class="versus-side versus-right">
+        <h3 class="green" style="font-size: 28px;">Loop</h3>
+        <div class="medium-number green" style="margin-top: 15px;">0.5%</div>
+        <p style="margin-top: 10px; font-size: 18px;">transparent rate</p>
+        <p style="font-size: 16px; margin-top: 5px;">Free transfers</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: CTA / Close -->
+  <div class="slide" data-slide="12">
+    <h1 style="font-size: 64px;">Stop the bleed.</h1>
+    <h2 style="margin-top: 20px; color: rgba(255,255,255,0.5);">Switch to <span class="green">Loop</span>.</h2>
+    <p style="margin-top: 40px; font-size: 28px;">
+      <span class="green" style="font-weight: 700;">bleed.bankonloop.com</span>
+    </p>
+    <p style="margin-top: 60px; font-size: 18px; color: rgba(255,255,255,0.3);">Built by Yan Matagne · Loop Financial</p>
+  </div>
+
+</div>
+
+<div class="logo">bleed</div>
+<div class="slide-num" id="slideNum">1 / 12</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const slideNum = document.getElementById('slideNum');
+  let current = 0;
+  
+  function goTo(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    slideNum.textContent = `${current + 1} / ${slides.length}`;
+  }
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+  });
+  
+  // Touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) { diff > 0 ? goTo(current + 1) : goTo(current - 1); }
+  });
+  
+  // Click to advance
+  document.addEventListener('click', (e) => {
+    if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+    else goTo(current - 1);
+  });
+</script>
+
+</body>
+</html>

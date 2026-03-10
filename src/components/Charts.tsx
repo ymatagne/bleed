@@ -38,13 +38,14 @@ function MonthlyBarChart({ data, plans }: { data: ChartData; plans: PlanComparis
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const monthlyBank = data.annualProjection / 12;
   const planMonthlies = plans.map(p => ({ name: p.plan, monthly: p.annualCostOnPlan / 12 }));
-  const max = monthlyBank * 1.15;
+  const allValues = [monthlyBank, ...planMonthlies.map(p => p.monthly)];
+  const max = Math.max(...allValues) * 1.15;
   const barCount = 1 + plans.length; // bank + plans
 
   return (
     <div ref={ref} className="bg-white border border-border rounded-xl p-5">
       <h5 className="text-sm font-semibold uppercase tracking-wider text-text-dim mb-4">Monthly Cost Comparison</h5>
-      <div className="flex items-end gap-1.5 sm:gap-2 h-56">
+      <div className="flex items-end gap-1.5 sm:gap-2 h-56 overflow-hidden">
         {MONTHS.map((m, i) => (
           <div key={m} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
             <div className="flex gap-0.5 w-full items-end flex-1">
@@ -92,7 +93,8 @@ function CumulativeLineChart({ data, plans }: { data: ChartData; plans: PlanComp
 
   const w = 300, h = 160, px = 35, py = 10;
   const plotW = w - px - 5, plotH = h - py * 2 - 10;
-  const maxVal = monthlyBank * 12 * 1.1;
+  const allMonthly = [monthlyBank, ...plans.map(p => p.annualCostOnPlan / 12)];
+  const maxVal = Math.max(...allMonthly) * 12 * 1.1;
 
   const makeLine = (monthlyVal: number) => {
     const points = MONTHS.map((_, i) => {

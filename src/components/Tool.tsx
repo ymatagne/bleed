@@ -747,11 +747,6 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           {/* Share Buttons */}
           <ShareButtons data={data} />
 
-          {/* FX Rate Disclaimer */}
-          <p className="text-xs text-text-dim text-center">
-            FX markups calculated using today&apos;s mid-market rates. Actual rates at the time of transaction may have differed slightly.
-          </p>
-
           {/* Download Report + CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <button

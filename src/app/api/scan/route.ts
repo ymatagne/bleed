@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMidMarketRates } from "@/lib/fx-rates";
+import { getMidMarketRates, getHistoricalRatesForRange } from "@/lib/fx-rates";
 
 const MISTRAL_OCR_API = "https://api.mistral.ai/v1/ocr";
 const MISTRAL_CHAT_API = "https://api.mistral.ai/v1/chat/completions";
@@ -93,16 +93,62 @@ export async function POST(req: NextRequest) {
     const combinedText = extractedTexts.join("\n\n");
     const isMultiple = extractedTexts.length > 1;
 
-    // Fetch live mid-market rates
+    // Extract date range from OCR text for historical rates
+    // Look for dates in YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, Month DD YYYY patterns
+    const dateRegex = /\b(\d{4}-\d{2}-\d{2})\b|\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b|\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})\b/gi;
+    const foundDates: string[] = [];
+    let match;
+    while ((match = dateRegex.exec(combinedText)) !== null) {
+      try {
+        const raw = match[1] || match[2] || match[3];
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime()) && parsed.getFullYear() >= 2020 && parsed.getFullYear() <= 2030) {
+          foundDates.push(parsed.toISOString().slice(0, 10));
+        }
+      } catch { /* skip unparseable */ }
+    }
+
+    // Fetch historical rates for the statement period, fallback to today's rates
     let ratesContext = "";
     try {
-      const rates = await getMidMarketRates();
-      const usdCad = (1 / rates.USD).toFixed(4);
-      const eurCad = (1 / rates.EUR).toFixed(4);
-      const gbpCad = (1 / rates.GBP).toFixed(4);
-      ratesContext = `\n\nUse these REAL mid-market rates for your analysis: USD/CAD: ${usdCad}, EUR/CAD: ${eurCad}, GBP/CAD: ${gbpCad} (as of today). Compare the bank's rates against these to calculate exact markup percentages. Do NOT estimate mid-market rates — use these exact values.`;
+      if (foundDates.length >= 2) {
+        foundDates.sort();
+        const startDate = foundDates[0];
+        const endDate = foundDates[foundDates.length - 1];
+
+        // Fetch historical rates for major currencies
+        const [usdRates, eurRates, gbpRates] = await Promise.all([
+          getHistoricalRatesForRange(startDate, endDate, "cad", "usd"),
+          getHistoricalRatesForRange(startDate, endDate, "cad", "eur"),
+          getHistoricalRatesForRange(startDate, endDate, "cad", "gbp"),
+        ]);
+
+        // Format as a lookup table for the AI
+        const allDates = [...new Set([...Object.keys(usdRates), ...Object.keys(eurRates), ...Object.keys(gbpRates)])].sort();
+
+        if (allDates.length > 0) {
+          const rateLines = allDates.map((d) => {
+            const parts: string[] = [];
+            if (usdRates[d]) parts.push(`USD/CAD: ${(1 / usdRates[d]).toFixed(4)}`);
+            if (eurRates[d]) parts.push(`EUR/CAD: ${(1 / eurRates[d]).toFixed(4)}`);
+            if (gbpRates[d]) parts.push(`GBP/CAD: ${(1 / gbpRates[d]).toFixed(4)}`);
+            return `${d}: ${parts.join(", ")}`;
+          });
+
+          ratesContext = `\n\nHISTORICAL MID-MARKET RATES for the statement period (${startDate} to ${endDate}):\n${rateLines.join("\n")}\n\nThese are REAL historical mid-market rates from the actual transaction dates. Use the rate from the transaction date (or nearest available date) to calculate FX markups. This gives accurate markup percentages. Do NOT estimate mid-market rates — use these exact values.`;
+        }
+      }
+
+      // Fallback to today's rates if historical fetch yielded nothing
+      if (!ratesContext) {
+        const rates = await getMidMarketRates();
+        const usdCad = (1 / rates.USD).toFixed(4);
+        const eurCad = (1 / rates.EUR).toFixed(4);
+        const gbpCad = (1 / rates.GBP).toFixed(4);
+        ratesContext = `\n\nUse these REAL mid-market rates for your analysis: USD/CAD: ${usdCad}, EUR/CAD: ${eurCad}, GBP/CAD: ${gbpCad} (as of today — historical rates were unavailable). Compare the bank's rates against these to calculate exact markup percentages. Do NOT estimate mid-market rates — use these exact values. Note: these are today's rates, not from the transaction dates, so markup calculations are approximate.`;
+      }
     } catch (e) {
-      console.warn("Could not fetch live FX rates, AI will estimate:", e);
+      console.warn("Could not fetch FX rates, AI will estimate:", e);
     }
 
     // Step 2: Full banking audit
@@ -152,7 +198,7 @@ All plans include:
 
 Be THOROUGH in your analysis. Your job is to help the customer understand how much they are paying in bank fees and markups. Find at least 3 findings for any statement — there is ALWAYS something.
 
-NOTE: The mid-market rates provided are current rates. If the statement is from a past period, acknowledge in the findings that actual rates at the time of transaction may have differed slightly, but the markup percentage would be similar.
+NOTE: Historical mid-market rates are provided for the statement period when available. Use the rate from the transaction date (or nearest available date) to calculate FX markups. This gives accurate markup percentages. Actual interbank rates may have differed slightly intraday, but the markup percentage is accurate.
 
 You MUST respond with valid JSON only — no markdown, no code fences, no explanation outside the JSON.`,
           },

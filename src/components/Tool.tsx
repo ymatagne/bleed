@@ -141,23 +141,36 @@ function ScanTab() {
         />
         
         {analyzing ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 py-4">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
               className="w-12 h-12 mx-auto border-2 border-loop border-t-transparent rounded-full"
             />
-            <p className="text-text-muted">{progress || "Analyzing your statement..."}</p>
-            <div className="max-w-xs mx-auto space-y-2">
-              {["Extracting transactions", "Identifying FX conversions", "Calculating hidden markups"].map((step, i) => (
+            <p className="text-text-muted font-medium">{progress || "Analyzing your statement..."}</p>
+            {/* Progress bar */}
+            <div className="max-w-xs mx-auto h-1.5 bg-surface-dark rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-loop rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: "90%" }}
+                transition={{ duration: 8, ease: "easeOut" }}
+              />
+            </div>
+            <div className="max-w-xs mx-auto space-y-3">
+              {["Extracting transactions", "Identifying FX conversions", "Calculating hidden markups", "Generating audit report"].map((step, i) => (
                 <motion.div
                   key={step}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.8 }}
+                  transition={{ delay: i * 1.2 }}
                   className="flex items-center gap-2 text-sm text-text-dim"
                 >
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.8 + 0.6 }}>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: i * 1.2 + 0.8 }}
+                  >
                     <Check className="w-4 h-4 text-loop" />
                   </motion.div>
                   {step}

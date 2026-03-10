@@ -40,10 +40,10 @@ export const metadata: Metadata = {
     siteName: "Bleed by Loop",
     images: [
       {
-        url: "/og.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Bleed — Free FX Audit Tool showing hidden Canadian bank foreign exchange fees",
+        alt: "Bleed — Your bank is bleeding you dry. Free FX Audit Tool by Loop.",
       },
     ],
     locale: "en_CA",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     title: "Your Bank Is Bleeding You Dry — See Your Hidden FX Fees",
     description:
       "Canadian banks hide 2.5–3% on every FX transaction. See exactly how much RBC, TD, BMO & others charge you. Free audit tool.",
-    images: ["/og.png"],
+    images: ["/opengraph-image"],
     creator: "@bankonloop",
   },
   robots: {

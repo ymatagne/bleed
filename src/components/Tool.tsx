@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { buildShareUrl } from "@/lib/report-codec";
 import { generateAuditPdf } from "@/lib/generatePdf";
@@ -56,6 +56,56 @@ interface AuditResult {
   planComparison?: PlanComparison[];
 }
 
+/** Sanitize numeric fields from AI response to prevent NaN */
+function sanitizeAuditResult(data: AuditResult): AuditResult {
+  return {
+    ...data,
+    openingBalance: parseFloat(String(data.openingBalance)) || 0,
+    closingBalance: parseFloat(String(data.closingBalance)) || 0,
+    findings: data.findings.map((f) => ({
+      ...f,
+      amount: parseFloat(String(f.amount)) || 0,
+      savingsPerOccurrence: parseFloat(String(f.savingsPerOccurrence)) || 0,
+    })),
+    recommendations: data.recommendations.map((r) => ({
+      ...r,
+      estimatedAnnualSavings: parseFloat(String(r.estimatedAnnualSavings)) || 0,
+    })),
+    summary: {
+      totalFeesFound: parseFloat(String(data.summary.totalFeesFound)) || 0,
+      totalFxMarkups: parseFloat(String(data.summary.totalFxMarkups)) || 0,
+      totalAccountFees: parseFloat(String(data.summary.totalAccountFees)) || 0,
+      totalWireFees: parseFloat(String(data.summary.totalWireFees)) || 0,
+      totalOtherFees: parseFloat(String(data.summary.totalOtherFees)) || 0,
+      annualProjection: parseFloat(String(data.summary.annualProjection)) || 0,
+      loopAnnualCost: parseFloat(String(data.summary.loopAnnualCost)) || 0,
+      annualSavings: parseFloat(String(data.summary.annualSavings)) || 0,
+    },
+    planComparison: (data.planComparison || []).map((p) => ({
+      ...p,
+      monthlyFee: parseFloat(String(p.monthlyFee)) || 0,
+      fxRate: parseFloat(String(p.fxRate)) || 0,
+      annualCostOnPlan: parseFloat(String(p.annualCostOnPlan)) || 0,
+      annualSavingsVsBank: parseFloat(String(p.annualSavingsVsBank)) || 0,
+    })),
+  };
+}
+
+/** Calculate total individual transactions from grouped findings descriptions */
+function getTotalIssueCount(findings: Finding[]): number {
+  let total = 0;
+  for (const f of findings) {
+    // Try to parse patterns like "3 wires × $45", "5 transactions", "2 e-Transfers"
+    const match = f.description.match(/^(\d+)\s+/);
+    if (match) {
+      total += parseInt(match[1], 10);
+    } else {
+      total += 1;
+    }
+  }
+  return total;
+}
+
 const banks = [
   { name: "RBC Royal Bank", markup: 2.5 },
   { name: "TD Canada Trust", markup: 2.6 },
@@ -101,7 +151,7 @@ function ScanTab() {
         return;
       }
 
-      setResult(data as AuditResult);
+      setResult(sanitizeAuditResult(data as AuditResult));
     } catch {
       setError("Failed to connect to the analysis service. Please try again.");
     } finally {
@@ -397,6 +447,135 @@ function ReferralSection({ data }: { data: AuditResult }) {
   );
 }
 
+/* ── Finding Card (collapsible) ── */
+function FindingCard({ finding, index }: { finding: Finding; index: number }) {
+  const [open, setOpen] = useState(false);
+  const Icon = categoryIcons[finding.category] || DollarSign;
+  const label = categoryLabels[finding.category] || finding.category;
+
+  // Parse Loop alternative into structured data for compact display
+  const parseLoopAlt = (alt: string, category: string) => {
+    // For account fees, simplify to just the Loop pricing
+    if (category === "account_fee") {
+      // Extract Loop plan prices if mentioned
+      const basicMatch = alt.match(/(?:Basic|free)[^$]*\$?(0|free)/i);
+      const plusMatch = alt.match(/Plus[^$]*\$(\d+)/i);
+      const powerMatch = alt.match(/Power[^$]*\$(\d+)/i);
+      if (basicMatch || plusMatch || powerMatch) {
+        return {
+          type: "plans" as const,
+          basic: basicMatch ? "$0/mo" : null,
+          plus: plusMatch ? `$${plusMatch[1]}/mo` : null,
+          power: powerMatch ? `$${powerMatch[1]}/mo` : null,
+        };
+      }
+      return { type: "text" as const, text: "Loop Basic: $0/mo" };
+    }
+    return { type: "text" as const, text: alt };
+  };
+
+  const loopData = parseLoopAlt(finding.loopAlternative, finding.category);
+
+  // For account_fee, simplify the description
+  const displayDescription = finding.category === "account_fee"
+    ? finding.description.replace(/\s*[-–—].*?(Loop|loop|plan).*$/i, "").replace(/\.\s*Loop.*$/i, ".")
+    : finding.description;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06 }}
+      className="bg-white border border-border rounded-xl overflow-hidden"
+    >
+      {/* Header — always visible */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 p-4 hover:bg-surface-tint transition-colors text-left"
+      >
+        <div className="w-9 h-9 rounded-lg bg-danger/10 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4.5 h-4.5 text-danger" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-semibold text-loop-deep">{label}</span>
+          {finding.date && <span className="text-xs text-text-dim ml-2">· {finding.date}</span>}
+        </div>
+        <div className="text-right flex-shrink-0 mr-2">
+          <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
+          {finding.savingsPerOccurrence > 0 && (
+            <p className="text-xs font-medium text-loop">Save {formatCurrency(finding.savingsPerOccurrence)}</p>
+          )}
+        </div>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex-shrink-0"
+        >
+          <ChevronDown className="w-4 h-4 text-text-dim" />
+        </motion.div>
+      </button>
+
+      {/* Expandable details */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3 border-t border-border-light pt-3">
+              {/* Description */}
+              <p className="text-sm text-text">{displayDescription}</p>
+
+              {/* Loop alternative — compact comparison */}
+              <div className="bg-loop/5 rounded-lg p-3">
+                <p className="text-xs font-semibold text-loop uppercase tracking-wider mb-2">With Loop</p>
+                {loopData.type === "plans" ? (
+                  <div className="flex gap-4 text-sm">
+                    {loopData.basic && (
+                      <div>
+                        <span className="text-text-dim text-xs">Basic</span>
+                        <p className="font-semibold text-loop">{loopData.basic}</p>
+                      </div>
+                    )}
+                    {loopData.plus && (
+                      <div>
+                        <span className="text-text-dim text-xs">Plus</span>
+                        <p className="font-semibold text-loop">{loopData.plus}</p>
+                      </div>
+                    )}
+                    {loopData.power && (
+                      <div>
+                        <span className="text-text-dim text-xs">Power</span>
+                        <p className="font-semibold text-loop">{loopData.power}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-loop font-medium">{loopData.text}</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function FindingsSection({ findings }: { findings: Finding[] }) {
+  return (
+    <div className="space-y-3">
+      <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
+      {findings.map((finding, i) => (
+        <FindingCard key={i} finding={finding} index={i} />
+      ))}
+    </div>
+  );
+}
+
 /* ── Audit Report with Email Gate ── */
 function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
   const { openSignup } = useSignupModal();
@@ -477,11 +656,12 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
             <span className="text-sm font-mono text-danger uppercase tracking-wider">Banking Audit Report</span>
           </div>
           <h3 className="text-2xl font-bold text-loop-deep">
-            We found {data.findings.length} issue{data.findings.length !== 1 ? "s" : ""} costing you {formatCurrency(data.summary.annualProjection)}/yr
+            We found {getTotalIssueCount(data.findings)} issue{getTotalIssueCount(data.findings) !== 1 ? "s" : ""} costing you {formatCurrency(data.summary.annualProjection)}/yr
           </h3>
           {data.bankName !== "Unknown" && (
             <p className="text-sm text-text-dim mt-1">{data.bankName} · {data.statementPeriod}</p>
           )}
+          <p className="text-sm text-loop font-medium mt-1">Switch to Loop Basic — $0 monthly fees</p>
         </div>
         <button onClick={onReset} className="p-2 hover:bg-surface-dark rounded-lg transition-colors">
           <X className="w-5 h-5 text-text-dim" />
@@ -494,7 +674,7 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           <AlertTriangle className="w-5 h-5 mb-2 text-loop" />
           <p className="text-xs text-text-dim uppercase tracking-wider">Issues Found</p>
           <p className="text-2xl font-bold mt-1 text-loop-deep">
-            <AnimatedNumber value={data.findings.length} format={(n) => Math.round(n).toString()} />
+            <AnimatedNumber value={getTotalIssueCount(data.findings)} format={(n) => Math.round(n).toString()} />
           </p>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border rounded-xl p-4">
@@ -568,45 +748,7 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
           <ProjectionCharts summary={data.summary} plans={data.planComparison} />
 
           {/* Findings */}
-          <div className="bg-white border border-border rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-border-light">
-              <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
-            </div>
-            <div className="divide-y divide-border-light">
-              {data.findings.map((finding, i) => {
-                const Icon = categoryIcons[finding.category] || DollarSign;
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="p-4 hover:bg-surface-tint transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-danger" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono text-text-dim uppercase">{categoryLabels[finding.category] || finding.category}</span>
-                          {finding.date && <span className="text-xs text-text-dim">· {finding.date}</span>}
-                        </div>
-                        <p className="text-sm text-text font-medium">{finding.description}</p>
-                        <p className="text-sm text-loop mt-1">💡 Loop: {finding.loopAlternative}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
-                        {finding.savingsPerOccurrence > 0 && (
-                          <p className="text-xs text-loop">Save {formatCurrency(finding.savingsPerOccurrence)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+          <FindingsSection findings={data.findings} />
 
           <p className="text-xs text-gray-400">
             FX markups calculated using today&apos;s mid-market rates. Actual rates at the time of transaction may have differed slightly.
@@ -741,11 +883,8 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
             })()}
           </div>
 
-          {/* Referral Section */}
+          {/* Referral / Share Section */}
           <ReferralSection data={data} />
-
-          {/* Share Buttons */}
-          <ShareButtons data={data} />
 
           {/* Download Report + CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">

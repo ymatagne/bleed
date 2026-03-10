@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import fs from "fs";
 import path from "path";
 import { remark } from "remark";
+import remarkGfm from "remark-gfm";
 import html from "remark-html";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 async function getContent() {
   const filePath = path.join(process.cwd(), "HOW-I-BUILT-THIS.md");
   const raw = fs.readFileSync(filePath, "utf-8");
-  const result = await remark().use(html).process(raw);
+  const result = await remark().use(remarkGfm).use(html).process(raw);
   return result.toString();
 }
 

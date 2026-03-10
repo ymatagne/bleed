@@ -264,7 +264,7 @@ export default function SendCalculator() {
               {/* Inputs */}
               <div className="px-6 py-4 border-b border-gray-100">
                 <div className="flex gap-3 items-end">
-                  <div className="flex-1">
+                  <div className="w-36 sm:w-44 flex-shrink-0">
                     <label className="text-xs font-medium text-gray-500 mb-1 block">You send (CAD)</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">$</span>
@@ -274,12 +274,12 @@ export default function SendCalculator() {
                         inputMode="decimal"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, ""))}
-                        className="w-full pl-8 pr-4 py-2.5 border border-gray-200 rounded-lg text-lg font-semibold text-[#01251e] focus:outline-none focus:ring-2 focus:ring-[#004639]/30 focus:border-[#004639]"
+                        className="w-full pl-8 pr-2 py-2.5 border border-gray-200 rounded-lg text-lg font-semibold text-[#01251e] focus:outline-none focus:ring-2 focus:ring-[#004639]/30 focus:border-[#004639]"
                         placeholder="10,000"
                       />
                     </div>
                   </div>
-                  <div className="w-44">
+                  <div className="flex-1 min-w-0">
                     <label className="text-xs font-medium text-gray-500 mb-1 block">They get</label>
                     <select
                       value={currency}

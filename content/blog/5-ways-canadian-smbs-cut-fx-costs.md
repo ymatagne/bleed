@@ -45,7 +45,7 @@ If you call your bank's FX desk (yes, they have one) and tell them you're conver
 
 This is where the real savings happen.
 
-FX specialists and fintechs — companies like Wise, OFX, Cambridge Global Payments, and others — exist specifically to offer better exchange rates than banks. Their business model is built on **transparent, low-margin FX**, not on hiding costs in the spread.
+FX specialists and fintechs — companies like Wise, OFX, Cambridge Global Payments, Loop, and others — exist specifically to offer better exchange rates than banks. Their business model is built on **transparent, low-margin FX**, not on hiding costs in the spread.
 
 Here's how the rates typically compare:
 

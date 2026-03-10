@@ -95,7 +95,7 @@ Several factors conspire to keep these costs invisible:
 
 **Costs are spread across transactions.** $1,250 in FX markup on a single wire doesn't trigger alarm bells the way a $15,000 annual invoice would — even though that's exactly what it adds up to.
 
-**Nobody's comparing.** Unless you're checking mid-market rates after every wire, you have no benchmark. Banks are counting on this. We explored the economics behind this in [how Canadian banks make billions on FX](/blog/how-canadian-banks-make-billions-on-fx).
+**Nobody's comparing.** Unless you're checking mid-market rates after every wire, you have no benchmark. Banks are counting on this. We explored the economics behind this in [how Canadian banks make billions on FX](/blog/hidden-cost-of-fx-canadian-banks-markup).
 
 ## Smarter Alternatives
 
@@ -105,7 +105,7 @@ Canadian businesses don't have to accept the wire-plus-markup model. Here are be
 Instead of sending 20 individual wires per month, consolidate into fewer, larger payments where possible. This reduces wire fees and may qualify you for better FX rates. More on this in our guide to [cutting FX costs for SMBs](/blog/5-ways-canadian-smbs-cut-fx-costs).
 
 ### FX Specialists and Fintechs
-Providers like Wise, OFX, and others offer international transfers with FX spreads of 0.2%–0.7% and much lower (or zero) wire fees. For a $50,000 transfer, that's a savings of $600–$1,100 per transaction.
+Providers like Wise, OFX, Loop, and others offer international transfers with FX spreads of 0.2%–0.7% and much lower (or zero) wire fees. For a $50,000 transfer, that's a savings of $600–$1,100 per transaction.
 
 ### Forward Contracts
 If you have predictable payment schedules, locking in exchange rates with forward contracts eliminates rate volatility and can reduce effective spreads. See our [FX hedging guide](/blog/fx-hedging-small-business-canada) for details.

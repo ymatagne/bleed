@@ -79,7 +79,7 @@ Even CIBC's relatively competitive 2.1% retail spread is **4x to 10x higher** th
 
 That's a potential savings of **$7,000 to $11,500 per year** — just by moving your FX conversions to a provider that doesn't mark up rates by 2%.
 
-The Big Five banks can charge these markups because most business owners don't know what the mid-market rate is, don't realize the markup exists, and assume that all banks charge roughly the same. To understand how this lack of transparency benefits banks, read [how Canadian banks make billions on foreign exchange](/blog/how-canadian-banks-make-billions-on-fx).
+The Big Five banks can charge these markups because most business owners don't know what the mid-market rate is, don't realize the markup exists, and assume that all banks charge roughly the same. To understand how this lack of transparency benefits banks, read [how Canadian banks make billions on foreign exchange](/blog/hidden-cost-of-fx-canadian-banks-markup).
 
 ## What Should You Do?
 

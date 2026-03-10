@@ -58,7 +58,7 @@ Banks have a strong financial incentive to keep the spread invisible. Here's why
 
 **Bundled relationships.** FX is cross-subsidized with other banking products. Your bank may offer you a "great rate" on your business loan while quietly recouping margin on your FX conversions.
 
-We covered the economics of this in detail in our piece on [how banks make billions from foreign exchange](/blog/how-canadian-banks-make-billions-on-fx).
+We covered the economics of this in detail in our piece on [how banks make billions from foreign exchange](/blog/hidden-cost-of-fx-canadian-banks-markup).
 
 ## How to Calculate Your Actual Spread
 

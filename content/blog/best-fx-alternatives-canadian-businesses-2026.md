@@ -9,7 +9,7 @@ slug: best-fx-alternatives-canadian-businesses-2026
 
 # Best FX Alternatives for Canadian Businesses in 2026
 
-If you've been converting currency through your Big Five bank, you've been overpaying. We've covered this extensively — from [how the FX spread works](/blog/mid-market-rate-vs-bank-rate-fx-spread) to [what specific banks charge](/blog/how-much-does-rbc-charge-for-foreign-exchange) to [how the Big Five profit from opacity](/blog/how-canadian-banks-make-billions-on-fx).
+If you've been converting currency through your Big Five bank, you've been overpaying. We've covered this extensively — from [how the FX spread works](/blog/mid-market-rate-vs-bank-rate-fx-spread) to [what specific banks charge](/blog/how-much-does-rbc-charge-for-foreign-exchange) to [how the Big Five profit from opacity](/blog/hidden-cost-of-fx-canadian-banks-markup).
 
 The natural next question: **what should you use instead?**
 

@@ -78,7 +78,7 @@ You don't have to accept TD's posted rates. Canadian businesses have several opt
 
 **Negotiate with TD directly.** If you're converting more than $500K annually, call your relationship manager and ask for better rates. Most businesses never ask — and banks count on that.
 
-**Use an FX specialist.** Companies like Wise, OFX, and Cambridge Global Payments offer business accounts with spreads of 0.2% to 0.7% — a fraction of TD's markup. We compare these options in detail in our guide to [the best FX alternatives for Canadian businesses in 2026](/blog/best-fx-alternatives-canadian-businesses-2026).
+**Use an FX specialist.** Companies like Wise, OFX, Cambridge Global Payments, and Loop offer business accounts with spreads of 0.2% to 0.7% — a fraction of TD's markup. Loop is worth a look if you want FX, payments, cards, and banking in one place. We compare these options in detail in our guide to [the best FX alternatives for Canadian businesses in 2026](/blog/best-fx-alternatives-canadian-businesses-2026).
 
 **Batch your conversions.** Instead of converting small amounts frequently (where spreads are worst), consolidate into larger, less frequent conversions. Read our [5 strategies to cut FX costs](/blog/5-ways-canadian-smbs-cut-fx-costs) for more on this.
 

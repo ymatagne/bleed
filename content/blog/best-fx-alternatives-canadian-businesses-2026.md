@@ -87,6 +87,21 @@ Corpay has consolidated several FX brands and now offers a comprehensive cross-b
 
 **Best for:** Businesses that need deep integration with their existing financial systems.
 
+### Loop
+
+**Spread:** 0.2%–0.5% over mid-market
+**Transfer fee:** $0
+**Speed:** 1–2 business days
+**Currencies:** 40+
+**Forward contracts:** No (coming soon)
+**Regulated:** Yes (MSB in Canada)
+
+Loop takes a different approach from the pure FX specialists on this list. Rather than focusing solely on currency conversion, Loop bundles FX with business banking, payments, and cards — so you can manage your cross-border finances in one place instead of juggling multiple platforms.
+
+**Best for:** Canadian businesses that want competitive FX rates *and* want to consolidate their financial stack — FX, payments, cards, and banking — without maintaining separate accounts everywhere.
+
+**Limitations:** Newer platform with fewer currencies than Cambridge or Convera. No forward contracts yet.
+
 ### Convera (formerly Western Union Business Solutions)
 
 **Spread:** 0.3%–0.8% over mid-market
@@ -108,6 +123,7 @@ Convera inherited Western Union's massive global network. They're strong on exot
 | OFX | 0.2%–0.5% | $0 | Yes | 55+ | Mid-size, personal service |
 | Cambridge | 0.1%–0.4% | $0 | Yes | 140+ | Complex needs, high volume |
 | Corpay | 0.2%–0.5% | $0 | Yes | 120+ | ERP integration |
+| Loop | 0.2%–0.5% | $0 | No | 40+ | All-in-one (FX + banking) |
 | Convera | 0.3%–0.8% | $0 | Yes | 140+ | Exotic currencies |
 | **Big Five bank** | **1.5%–3.0%** | **$30–$80** | **Yes** | **Varies** | **Convenience** |
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -385,7 +385,8 @@ function ReferralSection({ data }: { data: AuditResult }) {
 /* ── Audit Report with Email Gate ── */
 function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
   const { openSignup } = useSignupModal();
-  const [unlocked, setUnlocked] = useState(false);
+  const isDemo = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("demo") === "true";
+  const [unlocked, setUnlocked] = useState(isDemo);
   const [gateLoading, setGateLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
 

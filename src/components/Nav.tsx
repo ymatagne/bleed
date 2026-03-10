@@ -32,6 +32,9 @@ export default function Nav() {
           <a href="#tool" className="text-sm text-text-muted hover:text-text transition-colors hidden sm:block">
             Audit Tool
           </a>
+          <a href="/blog" className="text-sm text-text-muted hover:text-text transition-colors hidden sm:block">
+            Blog
+          </a>
           <button
             onClick={() => window.dispatchEvent(new Event("open-send-calculator"))}
             className="text-sm px-3 py-1.5 border border-[#004639]/20 text-[#004639] rounded-lg hover:bg-[#C4F6C6]/30 transition-colors hidden sm:block"

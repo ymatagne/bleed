@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { generateAuditPdf } from "@/lib/generatePdf";
 import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
 import { useSignupModal } from "./SignupModalProvider";
@@ -427,23 +428,10 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
     }
   };
 
-  const handleDownloadReport = async () => {
+  const handleDownloadReport = () => {
     setDownloading(true);
     try {
-      const res = await fetch("/api/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `loop-audit-${data.bankName.replace(/\s+/g, "-").toLowerCase()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      generateAuditPdf(data);
     } catch {
       // silently fail
     } finally {
@@ -762,7 +750,7 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
               className="inline-flex items-center gap-2 px-6 py-3 border-2 border-loop text-loop hover:bg-loop/5 font-semibold rounded-xl transition-colors disabled:opacity-50"
             >
               <Download className="w-5 h-5" />
-              {downloading ? "Generating..." : "Download Report"}
+              {downloading ? "Generating..." : "Download PDF"}
             </button>
             <button
               onClick={openSignup}

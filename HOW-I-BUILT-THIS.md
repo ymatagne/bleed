@@ -175,32 +175,28 @@ When I said "make it work on mobile," I didn't need to specify breakpoints. I se
 
 ## The Stack
 
-| Layer | Tool | Role |
-|-------|------|------|
-| 💬 WhatsApp | My phone | My interface |
-| 👻 OpenClaw | AI orchestrator | Connects me to agents |
-| 🤖 Claude | Anthropic | Writes code, content, everything |
-| 👁️ Mistral | OCR + analysis | Reads bank statements |
-| ⚡ Next.js 16 | React framework | Frontend |
-| 🎨 Tailwind | CSS | Styling |
-| 🚂 Railway | Hosting | Deploy |
+- 💬 **WhatsApp** — My phone. My interface.
+- 👻 **OpenClaw** — AI orchestrator. Connects me to agents.
+- 🤖 **Claude** (Anthropic) — Writes code, content, everything.
+- 👁️ **Mistral** — OCR + analysis. Reads bank statements.
+- ⚡ **Next.js 16** — React framework. Frontend.
+- 🎨 **Tailwind** — CSS. Styling.
+- 🚂 **Railway** — Hosting. Deploy.
 
 ---
 
 ## The Numbers
 
-| Metric | Value |
-|--------|-------|
-| Total time | ~5.5 hours |
-| Lines of code written by me | 0 |
-| Features shipped | 16 major features |
-| Blog posts written | 10 |
-| Landing pages created | 6 (home + 5 banks) |
-| Deploys | 15+ |
-| Sub-agents spawned | 12+ |
-| Screenshots used as bug reports | 6 |
-| WhatsApp messages sent | ~60 |
-| Cups of tea | 2 |
+- ⏱️ **Total time:** ~5.5 hours
+- ⌨️ **Lines of code written by me:** 0
+- 🚀 **Features shipped:** 16 major features
+- 📝 **Blog posts written:** 10
+- 🏦 **Landing pages created:** 6 (home + 5 banks)
+- 🔄 **Deploys:** 15+
+- 🤖 **Sub-agents spawned:** 12+
+- 📸 **Screenshots used as bug reports:** 6
+- 💬 **WhatsApp messages sent:** ~60
+- 🍵 **Cups of tea:** 2
 
 ---
 

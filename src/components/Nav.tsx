@@ -18,7 +18,7 @@ export default function Nav() {
 
   const navLinks = (
     <>
-      <a href="#tool" className="text-sm text-text-muted hover:text-text transition-colors" onClick={() => setMobileOpen(false)}>
+      <a href="/#tool" className="text-sm text-text-muted hover:text-text transition-colors" onClick={() => setMobileOpen(false)}>
         Audit Tool
       </a>
       <a href="/blog" className="text-sm text-text-muted hover:text-text transition-colors" onClick={() => setMobileOpen(false)}>

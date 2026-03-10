@@ -5,7 +5,7 @@ import { ArrowDown } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden bg-white">
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pb-20 overflow-hidden bg-white">
       {/* Subtle gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,70,57,0.06),transparent_60%)]" />
       
@@ -66,7 +66,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-6 text-sm text-text-dim"
+          className="mt-6 text-sm text-text-dim px-4"
         >
           No signup required. Your data stays private.
         </motion.p>

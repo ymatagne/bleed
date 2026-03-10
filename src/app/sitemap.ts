@@ -11,6 +11,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
+  const bankPages = ["rbc", "td", "bmo", "scotiabank", "cibc"].map((slug) => ({
+    url: `${baseUrl}/banks/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   return [
     {
       url: baseUrl,
@@ -24,6 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    ...bankPages,
     ...blogPosts,
   ];
 }

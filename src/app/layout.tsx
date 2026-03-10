@@ -71,6 +71,7 @@ export const metadata: Metadata = {
 };
 
 import { SignupModalProvider } from "@/components/SignupModalProvider";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -165,6 +166,8 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
           rel="stylesheet"
@@ -175,6 +178,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <GoogleAnalytics />
         <SignupModalProvider>{children}</SignupModalProvider>
       </body>
     </html>

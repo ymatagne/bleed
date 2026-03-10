@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Upload, FileText, Calculator, AlertTriangle, TrendingDown, DollarSign, BarChart3, ArrowRight, Check, X, Shield, Zap, CreditCard, Building2, Share2, Copy, Linkedin, Download, Mail, MessageCircle, Lock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { buildShareUrl } from "@/lib/report-codec";
 import { generateAuditPdf } from "@/lib/generatePdf";
 import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
@@ -292,7 +293,7 @@ function ShareButtons({ data }: { data: AuditResult }) {
   const [copied, setCopied] = useState(false);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const shareUrl = `${baseUrl}?bankName=${encodeURIComponent(data.bankName)}&totalFees=${data.summary.totalFeesFound}&annualProjection=${data.summary.annualProjection}&annualSavings=${data.summary.annualSavings}&findingsCount=${data.findings.length}`;
+  const shareUrl = buildShareUrl(baseUrl, data as unknown as Record<string, unknown>);
   const savings = formatCurrency(data.summary.annualProjection);
   const shareText = `My bank is charging me ${savings}/yr in hidden fees. See what yours is hiding →`;
 

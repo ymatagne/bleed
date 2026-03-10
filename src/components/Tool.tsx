@@ -608,6 +608,10 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
             </div>
           </div>
 
+          <p className="text-xs text-gray-400">
+            FX markups calculated using today&apos;s mid-market rates. Actual rates at the time of transaction may have differed slightly.
+          </p>
+
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
             <div className="space-y-4">
@@ -742,6 +746,11 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
 
           {/* Share Buttons */}
           <ShareButtons data={data} />
+
+          {/* FX Rate Disclaimer */}
+          <p className="text-xs text-text-dim text-center">
+            FX markups calculated using today&apos;s mid-market rates. Actual rates at the time of transaction may have differed slightly.
+          </p>
 
           {/* Download Report + CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -922,6 +931,10 @@ function CalculatorTab() {
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>
+
+      <p className="text-xs text-text-dim text-center mt-6">
+        Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates. Actual rates may vary.
+      </p>
     </div>
   );
 }
@@ -977,6 +990,10 @@ export default function Tool() {
             {tab === "scan" ? <ScanTab /> : <CalculatorTab />}
           </motion.div>
         </AnimatePresence>
+
+        <p className="text-xs text-gray-400 text-center mt-8">
+          Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates.
+        </p>
       </div>
     </section>
   );

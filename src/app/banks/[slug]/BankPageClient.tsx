@@ -99,30 +99,49 @@ export default function BankPageClient({
             <span className="text-text-dim">USD/month</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-border-light">
-              <div className="text-sm text-text-dim mb-1">
-                Hidden fee per month
-              </div>
-              <div className="text-3xl font-extrabold text-danger">
-                ${hiddenFee.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
-              </div>
-              <div className="text-xs text-text-dim mt-1">
-                at {bank.name}&apos;s ~{bank.markup}% markup
-              </div>
+          {/* Bank cost */}
+          <div className="bg-white rounded-xl p-6 border-2 border-danger/20 mb-4">
+            <div className="text-sm text-text-dim mb-1">
+              Yearly cost at {bank.name}
             </div>
-            <div className="bg-white rounded-xl p-6 border border-border-light">
-              <div className="text-sm text-text-dim mb-1">
-                Yearly cost
-              </div>
-              <div className="text-3xl font-extrabold text-danger">
-                ${yearlyFee.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
-              </div>
-              <div className="text-xs text-text-dim mt-1">
-                That&apos;s money you could save
-              </div>
+            <div className="text-4xl font-extrabold text-danger">
+              ${yearlyFee.toLocaleString("en-CA", { maximumFractionDigits: 0 })}/yr
+            </div>
+            <div className="text-xs text-text-dim mt-1">
+              {bank.markup}% markup × ${amount.toLocaleString("en-CA")} × 12 months
             </div>
           </div>
+
+          {/* Loop plans comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { name: "Basic", fee: 0, rate: 0.5 },
+              { name: "Plus", fee: 79, rate: 0.25 },
+              { name: "Power", fee: 299, rate: 0.10 },
+            ].map((plan) => {
+              const loopYearly = (amount * (plan.rate / 100) + plan.fee) * 12;
+              return (
+                <div key={plan.name} className="bg-white rounded-xl p-5 border border-border-light">
+                  <div className="text-sm font-semibold text-loop-deep mb-1">Loop {plan.name}</div>
+                  <div className="text-2xl font-extrabold text-loop-deep">
+                    ${loopYearly.toLocaleString("en-CA", { maximumFractionDigits: 0 })}/yr
+                  </div>
+                  <div className="text-xs text-text-dim mt-1">
+                    {plan.rate}% FX{plan.fee > 0 ? ` + $${plan.fee}/mo plan` : ", no plan fee"}
+                  </div>
+                  {yearlyFee - loopYearly > 0 && (
+                    <div className="text-sm font-bold text-loop mt-2">
+                      Save ${(yearlyFee - loopYearly).toLocaleString("en-CA", { maximumFractionDigits: 0 })}/yr
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-text-dim mt-4 text-center">
+            Plus: domestic and international payments are free on all Loop plans — no wire fees, ever.
+          </p>
         </div>
       </section>
 

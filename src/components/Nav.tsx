@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSignupModal } from "./SignupModalProvider";
 import { Menu, X } from "lucide-react";
@@ -9,6 +10,17 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openSignup } = useSignupModal();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleCalculate = useCallback(() => {
+    if (pathname === "/") {
+      window.dispatchEvent(new Event("open-send-calculator"));
+    } else {
+      router.push("/?calculator=true");
+    }
+    setMobileOpen(false);
+  }, [pathname, router]);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50);
@@ -28,7 +40,7 @@ export default function Nav() {
         Compare Banks
       </a>
       <button
-        onClick={() => { window.dispatchEvent(new Event("open-send-calculator")); setMobileOpen(false); }}
+        onClick={handleCalculate}
         className="text-sm px-3 py-1.5 border border-[#004639]/20 text-[#004639] rounded-lg hover:bg-[#C4F6C6]/30 transition-colors"
       >
         💸 Calculate

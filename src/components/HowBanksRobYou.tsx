@@ -61,7 +61,7 @@ const steps = [
   {
     num: "04",
     title: "It Compounds",
-    desc: "Do 10 transactions a month? That's nearly $4,000/month in hidden fees. Over a year, you're giving your bank the equivalent of a full-time employee's salary.",
+    desc: "Do 10 transactions a month? That's nearly $4,000/month in hidden fees. Over a year, that adds up to a full-time employee's salary — going straight to your bank.",
     visual: (
       <div className="font-mono text-center space-y-3">
         <div className="grid grid-cols-2 gap-4 text-sm">

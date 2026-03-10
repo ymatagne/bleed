@@ -15,10 +15,10 @@ export default function Footer() {
           All rights reserved.
         </p>
         <div className="flex items-center gap-4 text-sm text-text-dim">
-          <a href="https://bankonloop.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-loop transition-colors">
+          <a href="https://www.bankonloop.com/en-ca/legal#privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-loop transition-colors">
             Privacy
           </a>
-          <a href="https://bankonloop.com/terms" target="_blank" rel="noopener noreferrer" className="hover:text-loop transition-colors">
+          <a href="https://www.bankonloop.com/en-ca/legal" target="_blank" rel="noopener noreferrer" className="hover:text-loop transition-colors">
             Terms
           </a>
         </div>

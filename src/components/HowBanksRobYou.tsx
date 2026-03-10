@@ -27,7 +27,7 @@ const steps = [
         <p className="text-4xl font-bold text-loop-deep">1.3858</p>
         <div className="flex items-center justify-center gap-2 text-danger">
           <span className="text-sm">+2.5% hidden markup</span>
-          <span className="text-lg font-bold">= $338 stolen</span>
+          <span className="text-lg font-bold">= $338 in hidden fees</span>
         </div>
         <p className="text-text-dim text-xs">On a $13,520 conversion</p>
       </div>
@@ -93,7 +93,7 @@ export default function HowBanksRobYou() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-loop-deep">
-            How banks <span className="text-danger">rob you</span> on every transaction.
+            How banks <span className="text-danger">mark up</span> every transaction.
           </h2>
           <p className="text-text-muted max-w-2xl mx-auto">
             The markup is invisible by design. Here&apos;s how it works.

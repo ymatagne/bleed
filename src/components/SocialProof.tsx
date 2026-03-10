@@ -44,7 +44,7 @@ export default function SocialProof() {
             They stopped the bleed.
           </h2>
           <p className="text-text-muted max-w-2xl mx-auto">
-            Real businesses. Real savings. Real anger at their old bank.
+            Real businesses. Real savings. Real results.
           </p>
         </motion.div>
 

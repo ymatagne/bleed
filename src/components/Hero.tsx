@@ -39,7 +39,7 @@ export default function Hero() {
           className="mt-6 text-lg sm:text-xl text-text-muted max-w-2xl mx-auto leading-relaxed"
         >
           Canadian banks hide 2.5–3% markups on every foreign exchange transaction.
-          Upload your bank statement and we&apos;ll show you exactly how much they&apos;re taking.
+          Upload your bank statement and we&apos;ll show you exactly how much you&apos;re paying in hidden fees.
         </motion.p>
 
         <motion.div

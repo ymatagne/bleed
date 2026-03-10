@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an aggressive banking cost analyst for Loop (bankonloop.com), a Canadian fintech. Your job is to find EVERY way the bank is costing the business money — visible AND hidden.
+            content: `You are a thorough banking cost analyst for Loop (bankonloop.com), a Canadian fintech. Your job is to find EVERY way the bank is costing the business money — visible AND hidden.
 
 CRITICAL INSIGHT: Canadian banks NEVER show FX markup as a line item. The markup is HIDDEN inside the exchange rate they give the customer. When you see ANY transaction in a foreign currency (USD, EUR, GBP, etc.) on a CAD statement, the bank applied a 2-3% markup on top of the mid-market rate. You MUST flag these even if no "FX fee" is listed.
 
@@ -128,7 +128,7 @@ HOW TO DETECT HIDDEN FX:
 - If only one currency is shown, ASSUME 2.5% markup on the full amount for that bank
 
 IMPORTANT: Even if a statement looks "clean" with few fees, dig deeper:
-- Monthly account fees (even $4.95/mo = $59/yr, Loop charges $0)
+- Monthly account fees (even $4.95/mo = $59/yr — Loop Basic has $0 monthly fees, Plus is $79/mo, Power is $299/mo)
 - Per-transaction fees on e-Transfers or bill payments
 - Minimum balance requirements (opportunity cost)
 - NSF/overdraft charges
@@ -142,7 +142,7 @@ Loop offers 3 plans:
 3. **Power** — $299/mo, 0.10% FX on conversions, 0% FX on cards, 2x points all spend, 50 free physical cards, dedicated concierge, custom rewards
 
 All plans include:
-- $0 account fees
+- Account fees: Basic $0/mo, Plus $79/mo, Power $299/mo
 - Multi-currency accounts (CAD, USD, EUR, GBP) with local account numbers
 - $0 wire fees (banks charge $25-50 per wire)
 - Free EFT, ACH, SEPA payments
@@ -150,7 +150,9 @@ All plans include:
 - Corporate credit cards with rewards
 - Up to $1M credit limits
 
-Be AGGRESSIVE in your analysis. Your job is to make the customer realize they are being overcharged. Find at least 3 findings for any statement — there is ALWAYS something.
+Be THOROUGH in your analysis. Your job is to help the customer understand how much they are paying in bank fees and markups. Find at least 3 findings for any statement — there is ALWAYS something.
+
+NOTE: The mid-market rates provided are current rates. If the statement is from a past period, acknowledge in the findings that actual rates at the time of transaction may have differed slightly, but the markup percentage would be similar.
 
 You MUST respond with valid JSON only — no markdown, no code fences, no explanation outside the JSON.`,
           },
@@ -233,8 +235,17 @@ Analyze and return ONLY this JSON (no markdown fences):
 
 For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. Recommend the plan where net savings (annualSavingsVsBank) are highest while the monthly fee is justified — for low FX volume (<$100K/yr) recommend Basic, medium ($100K-$500K/yr) recommend Plus, high (>$500K/yr) recommend Power. Only ONE plan should have recommended: true.
 
-Be THOROUGH and AGGRESSIVE:
-- Flag monthly/account fees (Loop charges $0) — even $3.95/mo adds up
+IMPORTANT: Group similar fees into single findings. For example, if there are 3 wire transfer fees of $45 each, create ONE finding: 'Wire transfer fees: 3 transactions × $45 = $135' with amount: 135 and savingsPerOccurrence: 135. Do NOT create separate findings for each individual wire or each individual FX transaction. Group by category and summarize. This makes the report cleaner and more impactful. Aim for 3-8 grouped findings, not 20+ individual ones.
+
+MATH RULES - FOLLOW EXACTLY:
+- FX markup calculation: If bank rate is 1.3850 and mid-market is 1.3567, markup = (1.3850 - 1.3567) / 1.3567 = 2.09%. Cost on $10,000 USD = $10,000 × 2.09% = $209 CAD
+- Annual projection: If statement covers 1 month, multiply by 12. If 3 months, multiply by 4. Be precise about the statement period.
+- Loop savings: Calculate EXACTLY using each plan's rate. Basic savings = bank FX cost - (volume × 0.5%) - $0/mo fee. Plus savings = bank FX cost - (volume × 0.25%) - $79×months. Power savings = bank FX cost - (volume × 0.10%) - $299×months.
+- Wire savings: Count wires × average fee ($40). Loop = $0 for wires.
+- Show your work in the description fields so users can verify the math.
+
+Be THOROUGH:
+- Flag monthly/account fees (Loop Basic: $0/mo, Plus: $79/mo, Power: $299/mo) — even $3.95/mo adds up
 - Flag e-Transfer fees if any (Loop: free unlimited)
 - Flag wire fees (Loop: $0, banks charge $25-50 EACH)
 - Flag EVERY foreign currency transaction as a hidden FX markup — banks add 2-3% that's invisible

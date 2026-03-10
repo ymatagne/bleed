@@ -775,20 +775,22 @@ const loopPlans = [
 
 function CalculatorTab() {
   const { openSignup } = useSignupModal();
-  const [revenue, setRevenue] = useState(50000);
-  const [intlPercent, setIntlPercent] = useState(30);
+  const [intlVolume, setIntlVolume] = useState(50000);
+  const [wireCount, setWireCount] = useState(5);
   const [bankIdx, setBankIdx] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState(0);
-  
+
   const bank = banks[bankIdx];
-  const intlAmount = revenue * (intlPercent / 100);
-  const bankFees = intlAmount * (bank.markup / 100);
+  const bankFxCost = intlVolume * (bank.markup / 100);
+  const bankWireCost = wireCount * 40;
+  const bankMonthlyCost = bankFxCost + bankWireCost;
+  const bankYearlyCost = bankMonthlyCost * 12;
 
   const planResults = loopPlans.map(plan => {
-    const loopFxFees = intlAmount * (plan.fxRate / 100);
-    const monthlyTotal = loopFxFees + plan.monthlyFee;
-    const monthlySavings = bankFees - monthlyTotal;
-    return { ...plan, loopFxFees, monthlyTotal, monthlySavings, annualSavings: monthlySavings * 12 };
+    const loopFxCost = intlVolume * (plan.fxRate / 100);
+    const loopMonthlyCost = loopFxCost + plan.monthlyFee;
+    const loopYearlyCost = loopMonthlyCost * 12;
+    const annualSavings = bankYearlyCost - loopYearlyCost;
+    return { ...plan, loopFxCost, loopMonthlyCost, loopYearlyCost, annualSavings };
   });
 
   const bestIdx = planResults.reduce((best, p, i) => p.annualSavings > planResults[best].annualSavings ? i : best, 0);
@@ -798,14 +800,14 @@ function CalculatorTab() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-text-muted mb-2">Monthly Revenue (CAD)</label>
-            <input type="range" min={5000} max={500000} step={5000} value={revenue} onChange={(e) => setRevenue(Number(e.target.value))} className="w-full accent-loop" />
-            <div className="text-2xl font-bold text-loop-deep mt-1">{formatCurrency(revenue)}</div>
+            <label className="block text-sm text-text-muted mb-2">Monthly international transaction volume (CAD)</label>
+            <input type="range" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Number(e.target.value))} className="w-full accent-loop" />
+            <input type="number" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Math.max(1000, Math.min(1000000, Number(e.target.value) || 1000)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
           </div>
           <div>
-            <label className="block text-sm text-text-muted mb-2">% International Transactions</label>
-            <input type="range" min={5} max={100} step={5} value={intlPercent} onChange={(e) => setIntlPercent(Number(e.target.value))} className="w-full accent-loop" />
-            <div className="text-2xl font-bold text-loop-deep mt-1">{intlPercent}%</div>
+            <label className="block text-sm text-text-muted mb-2">Number of international wires per month</label>
+            <input type="range" min={0} max={50} step={1} value={wireCount} onChange={(e) => setWireCount(Number(e.target.value))} className="w-full accent-loop" />
+            <input type="number" min={0} max={50} step={1} value={wireCount} onChange={(e) => setWireCount(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
           </div>
           <div>
             <label className="block text-sm text-text-muted mb-2">Current Bank</label>
@@ -817,38 +819,34 @@ function CalculatorTab() {
           </div>
         </div>
 
-        <div className="bg-white border-2 border-danger/20 rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-text-dim">{bank.name} charges you</p>
-            <p className="text-xs text-text-dim">{bank.markup}% markup × {formatCurrency(intlAmount)}</p>
+        {/* Bank cost breakdown */}
+        <div className="bg-white border-2 border-danger/20 rounded-xl p-5">
+          <p className="text-sm font-semibold text-text-dim uppercase tracking-wider mb-3">{bank.name} costs you</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-text-muted">FX markup ({bank.markup}% × {formatCurrency(intlVolume)})</span>
+              <span className="font-semibold text-danger">{formatCurrency(bankFxCost)}/mo</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted">Wire fees ({wireCount} × $40)</span>
+              <span className="font-semibold text-danger">{formatCurrency(bankWireCost)}/mo</span>
+            </div>
+            <div className="border-t border-border pt-2 flex justify-between">
+              <span className="font-semibold text-text">Total monthly cost</span>
+              <span className="text-xl font-bold text-danger">{formatCurrency(bankMonthlyCost)}/mo</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-semibold text-text">Total yearly cost</span>
+              <span className="text-xl font-bold text-danger">{formatCurrency(bankYearlyCost)}/yr</span>
+            </div>
           </div>
-          <p className="text-3xl font-bold text-danger">{formatCurrency(bankFees)}<span className="text-sm text-text-dim font-normal">/mo</span></p>
         </div>
       </div>
 
       <div>
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex bg-white border border-border rounded-xl p-1">
-            {loopPlans.map((plan, i) => (
-              <button
-                key={plan.name}
-                onClick={() => setSelectedPlan(i)}
-                className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
-                  selectedPlan === i ? "bg-[#004639] text-white" : "text-text-muted hover:text-text"
-                }`}
-              >
-                {plan.name}
-                {i === bestIdx && (
-                  <span className="absolute -top-2 -right-1 w-2 h-2 bg-[#C4F6C6] rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        <h4 className="text-center text-lg font-bold text-loop-deep mb-6">What you&apos;d pay on Loop instead</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {planResults.map((plan, i) => {
-            const isSelected = selectedPlan === i;
             const isBest = i === bestIdx;
             return (
               <motion.div
@@ -856,13 +854,10 @@ function CalculatorTab() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                onClick={() => setSelectedPlan(i)}
-                className={`relative cursor-pointer rounded-2xl p-5 border-2 transition-all ${
-                  isSelected
-                    ? isBest
-                      ? "border-[#C4F6C6] bg-[#01251e] text-white shadow-[0_0_30px_rgba(196,246,198,0.3)] scale-[1.02]"
-                      : "border-[#004639] bg-[#01251e] text-white scale-[1.02]"
-                    : "border-border bg-white hover:border-loop/30"
+                className={`relative rounded-2xl p-5 border-2 transition-all ${
+                  isBest
+                    ? "border-[#C4F6C6] bg-[#01251e] text-white shadow-[0_0_30px_rgba(196,246,198,0.3)] scale-[1.02]"
+                    : "border-border bg-white"
                 }`}
               >
                 {isBest && (
@@ -870,32 +865,43 @@ function CalculatorTab() {
                     Best Value
                   </div>
                 )}
-                <div className="flex items-center justify-between mb-3">
-                  <h5 className={`font-bold ${isSelected ? "text-white" : "text-loop-deep"}`}>{plan.name}</h5>
-                  <span className={`text-sm ${isSelected ? "text-white/60" : "text-text-dim"}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h5 className={`font-bold text-lg ${isBest ? "text-white" : "text-loop-deep"}`}>{plan.name}</h5>
+                  <span className={`text-sm ${isBest ? "text-white/60" : "text-text-dim"}`}>
                     {plan.monthlyFee === 0 ? "Free" : `$${plan.monthlyFee}/mo`}
                   </span>
                 </div>
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className={isSelected ? "text-white/60" : "text-text-dim"}>FX Rate</span>
-                    <span className={`font-semibold ${isSelected ? "text-[#99E5FD]" : "text-loop"}`}>{plan.fxRate}%</span>
+                <div className="space-y-2 mb-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className={isBest ? "text-white/60" : "text-text-dim"}>FX cost ({plan.fxRate}% × {formatCurrency(intlVolume)})</span>
+                    <span className={`font-semibold ${isBest ? "text-white" : "text-text"}`}>{formatCurrency(plan.loopFxCost)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={isSelected ? "text-white/60" : "text-text-dim"}>Loop cost/mo</span>
-                    <span className={`font-semibold ${isSelected ? "text-white" : "text-text"}`}>{formatCurrency(plan.monthlyTotal)}</span>
+                  <div className="flex justify-between">
+                    <span className={isBest ? "text-white/60" : "text-text-dim"}>Wire fees</span>
+                    <span className={`font-semibold ${isBest ? "text-[#C4F6C6]" : "text-loop"}`}>$0 (free)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={isBest ? "text-white/60" : "text-text-dim"}>Plan fee</span>
+                    <span className={`font-semibold ${isBest ? "text-white" : "text-text"}`}>{plan.monthlyFee === 0 ? "$0" : formatCurrency(plan.monthlyFee)}</span>
+                  </div>
+                  <div className={`border-t pt-2 flex justify-between ${isBest ? "border-white/20" : "border-border"}`}>
+                    <span className={`font-semibold ${isBest ? "text-white" : "text-text"}`}>Monthly total</span>
+                    <span className={`font-bold ${isBest ? "text-white" : "text-text"}`}>{formatCurrency(plan.loopMonthlyCost)}</span>
                   </div>
                 </div>
-                <div className={`rounded-lg p-3 text-center ${isSelected ? "bg-white/10" : "bg-loop/5"}`}>
-                  <p className={`text-xs ${isSelected ? "text-white/50" : "text-text-dim"}`}>Annual savings</p>
-                  <p className={`text-2xl font-bold ${plan.annualSavings > 0 ? (isSelected ? "text-[#C4F6C6]" : "text-loop") : "text-danger"}`}>
-                    {formatCurrency(plan.annualSavings)}
+                <div className={`rounded-lg p-3 text-center ${isBest ? "bg-white/10" : "bg-loop/5"}`}>
+                  <p className={`text-xs ${isBest ? "text-white/50" : "text-text-dim"}`}>Annual savings vs {bank.name}</p>
+                  <p className={`text-2xl font-bold ${plan.annualSavings > 0 ? (isBest ? "text-[#C4F6C6]" : "text-loop") : "text-danger"}`}>
+                    {plan.annualSavings > 0 ? formatCurrency(plan.annualSavings) : `-${formatCurrency(Math.abs(plan.annualSavings))}`}
+                  </p>
+                  <p className={`text-xs mt-1 ${isBest ? "text-white/40" : "text-text-dim"}`}>
+                    ({formatCurrency(plan.loopYearlyCost)}/yr on Loop vs {formatCurrency(bankYearlyCost)}/yr at {bank.name})
                   </p>
                 </div>
-                {isSelected && plan.features && (
+                {plan.features && (
                   <div className="mt-4 space-y-1.5">
                     {plan.features.map(f => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-white/70">
+                      <div key={f} className={`flex items-center gap-2 text-xs ${isBest ? "text-white/70" : "text-text-dim"}`}>
                         <Check className="w-3 h-3 text-[#C4F6C6]" /> {f}
                       </div>
                     ))}

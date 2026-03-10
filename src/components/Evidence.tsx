@@ -39,7 +39,7 @@ export default function Evidence() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-loop-deep">
-            The evidence is <span className="text-danger">damning</span>.
+            The evidence is <span className="text-danger">overwhelming</span>.
           </h2>
           <p className="text-text-muted max-w-2xl mx-auto">
             This isn&apos;t a conspiracy theory. These are publicly available numbers the banks hope you never look at.

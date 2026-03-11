@@ -33,6 +33,12 @@ interface PlanComparison {
   fxRate: number;
   annualCostOnPlan: number;
   annualSavingsVsBank: number;
+  savingsBreakdown?: {
+    fxSavings: number;
+    wireSavings: number;
+    accountFeeSavings: number;
+    otherSavings: number;
+  };
   recommended: boolean;
 }
 
@@ -65,7 +71,7 @@ interface AuditResult {
 
 /** Sanitize numeric fields from AI response to prevent NaN */
 function sanitizeAuditResult(data: AuditResult): AuditResult {
-  return {
+  const result: AuditResult = {
     ...data,
     openingBalance: parseFloat(String(data.openingBalance)) || 0,
     closingBalance: parseFloat(String(data.closingBalance)) || 0,
@@ -96,6 +102,14 @@ function sanitizeAuditResult(data: AuditResult): AuditResult {
       fxRate: parseFloat(String(p.fxRate)) || 0,
       annualCostOnPlan: parseFloat(String(p.annualCostOnPlan)) || 0,
       annualSavingsVsBank: parseFloat(String(p.annualSavingsVsBank)) || 0,
+      ...(p.savingsBreakdown ? {
+        savingsBreakdown: {
+          fxSavings: parseFloat(String(p.savingsBreakdown.fxSavings)) || 0,
+          wireSavings: parseFloat(String(p.savingsBreakdown.wireSavings)) || 0,
+          accountFeeSavings: parseFloat(String(p.savingsBreakdown.accountFeeSavings)) || 0,
+          otherSavings: parseFloat(String(p.savingsBreakdown.otherSavings)) || 0,
+        },
+      } : {}),
     })),
     ...(data.creditCardData ? {
       creditCardData: {
@@ -106,6 +120,15 @@ function sanitizeAuditResult(data: AuditResult): AuditResult {
       },
     } : {}),
   };
+
+  // Safety net: ensure the plan with highest savings is marked recommended
+  if (result.planComparison && result.planComparison.length > 0) {
+    const bestIdx = result.planComparison.reduce((best, p, i) =>
+      p.annualSavingsVsBank > result.planComparison![best].annualSavingsVsBank ? i : best, 0);
+    result.planComparison = result.planComparison.map((p, i) => ({ ...p, recommended: i === bestIdx }));
+  }
+
+  return result;
 }
 
 /** Calculate total individual transactions from grouped findings descriptions */
@@ -1020,6 +1043,15 @@ function AuditReport({ data, onReset, ccFlag }: { data: AuditResult; onReset: ()
                         <p className={`text-2xl font-bold ${plan.annualSavingsVsBank > 0 ? (isRec ? "text-[#C4F6C6]" : "text-loop") : "text-danger"}`}>
                           {plan.annualSavingsVsBank > 0 ? formatCurrency(plan.annualSavingsVsBank) : `-${formatCurrency(Math.abs(plan.annualSavingsVsBank))}`}
                         </p>
+                        {plan.savingsBreakdown && plan.annualSavingsVsBank > 0 && (
+                          <div className={`text-xs mt-2 space-y-0.5 ${isRec ? "text-white/60" : "text-text-dim"}`}>
+                            {plan.savingsBreakdown.fxSavings > 0 && <p>{formatCurrency(plan.savingsBreakdown.fxSavings)} in FX</p>}
+                            {plan.savingsBreakdown.wireSavings > 0 && <p>{formatCurrency(plan.savingsBreakdown.wireSavings)} in wires</p>}
+                            {plan.savingsBreakdown.accountFeeSavings > 0 && <p>{formatCurrency(plan.savingsBreakdown.accountFeeSavings)} in fees</p>}
+                            {(plan.savingsBreakdown.accountFeeSavings < 0) && <p>−{formatCurrency(Math.abs(plan.savingsBreakdown.accountFeeSavings))} plan fee</p>}
+                            {plan.savingsBreakdown.otherSavings > 0 && <p>{formatCurrency(plan.savingsBreakdown.otherSavings)} other</p>}
+                          </div>
+                        )}
                         {plan.annualSavingsVsBank <= 0 && plan.monthlyFee > 0 && (
                           <p className={`text-xs mt-1 ${isRec ? "text-white/50" : "text-text-dim"}`}>
                             Plan fee exceeds savings at your current volume

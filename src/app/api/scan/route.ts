@@ -257,25 +257,27 @@ Analyze and return ONLY this JSON (no markdown fences):
       "plan": "Basic",
       "monthlyFee": 0,
       "fxRate": 0.5,
-      "annualCostOnPlan": number (annual FX cost at 0.5% + $0/mo fee + any remaining non-FX fees on Loop),
+      "annualCostOnPlan": number (annual FX cost at 0.5% + $0/mo fee),
       "annualSavingsVsBank": number (bank annualProjection minus annualCostOnPlan),
+      "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
     },
     {
       "plan": "Plus",
       "monthlyFee": 79,
       "fxRate": 0.25,
-      "annualCostOnPlan": number (annual FX cost at 0.25% + $79×12 fee + any remaining non-FX fees on Loop),
+      "annualCostOnPlan": number (annual FX cost at 0.25% + $79×12 fee),
       "annualSavingsVsBank": number,
+      "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
     },
     {
       "plan": "Power",
-
       "monthlyFee": 299,
       "fxRate": 0.10,
-      "annualCostOnPlan": number (annual FX cost at 0.10% + $299×12 fee + any remaining non-FX fees on Loop),
+      "annualCostOnPlan": number (annual FX cost at 0.10% + $299×12 fee),
       "annualSavingsVsBank": number,
+      "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
     }
   ],
@@ -290,7 +292,15 @@ Analyze and return ONLY this JSON (no markdown fences):
 
 NOTE on creditCardData: Only populate with real values if this is a credit card statement. Set isCC to true, totalCadSpend to all CAD transactions, totalForeignSpend to all foreign currency transactions (CAD equivalent), and foreignTransactionFee to totalForeignSpend × 0.025 (2.5% foreign transaction fee). For bank account statements, leave all values at 0/false.
 
-For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. Recommend the plan where net savings (annualSavingsVsBank) are highest while the monthly fee is justified — for low FX volume (<$100K/yr) recommend Basic, medium ($100K-$500K/yr) recommend Plus, high (>$500K/yr) recommend Power. Only ONE plan should have recommended: true.
+For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. The "recommended" plan MUST be the one with the HIGHEST annualSavingsVsBank value — period. Do NOT recommend a higher-tier plan unless it actually saves more money. Only ONE plan should have recommended: true.
+
+CRITICAL: Add a "savingsBreakdown" field to each plan showing exactly where savings come from:
+  "savingsBreakdown": {
+    "fxSavings": number (bank FX markup cost minus this plan's FX cost),
+    "wireSavings": number (bank wire fees minus $0 on Loop),
+    "accountFeeSavings": number (bank account fees minus this plan's monthly fee × 12),
+    "otherSavings": number (any other fee savings)
+  }
 
 CRITICAL GROUPING RULES — FOLLOW EXACTLY:
 - Group ALL similar fees into ONE finding per category. NEVER create two findings with the same category.

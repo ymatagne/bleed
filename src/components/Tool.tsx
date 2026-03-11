@@ -71,6 +71,8 @@ function sanitizeAuditResult(data: AuditResult): AuditResult {
     closingBalance: parseFloat(String(data.closingBalance)) || 0,
     findings: data.findings.map((f) => ({
       ...f,
+      description: f.description || "",
+      loopAlternative: f.loopAlternative || "",
       amount: parseFloat(String(f.amount)) || 0,
       savingsPerOccurrence: parseFloat(String(f.savingsPerOccurrence)) || 0,
     })),
@@ -111,7 +113,7 @@ function getTotalIssueCount(findings: Finding[]): number {
   let total = 0;
   for (const f of findings) {
     // Try to parse patterns like "3 wires × $45", "5 transactions", "2 e-Transfers"
-    const match = f.description.match(/^(\d+)\s+/);
+    const match = (f.description || "").match(/^(\d+)\s+/);
     if (match) {
       total += parseInt(match[1], 10);
     } else {
@@ -153,15 +155,22 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
   const setResult = (v: AuditResult | null) => setScanState(s => ({ ...s, result: v }));
   const setError = (v: string | null) => setScanState(s => ({ ...s, error: v }));
 
+  const stageFiles = (newFiles: File[]) => {
+    setScanState(s => ({ ...s, files: [...s.files, ...newFiles], error: null }));
+  };
+
+  const removeFile = (index: number) => {
+    setScanState(s => ({ ...s, files: s.files.filter((_, i) => i !== index) }));
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const dropped = Array.from(e.dataTransfer.files);
-    if (dropped.length) processFiles(dropped);
+    if (dropped.length) stageFiles(dropped);
   }, []);
 
   const processFiles = async (newFiles: File[]) => {
-    setFiles(newFiles);
     setAnalyzing(true);
     setError(null);
     setResult(null);
@@ -217,7 +226,8 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
           className="hidden"
           onChange={(e) => {
             const selected = Array.from(e.target.files || []);
-            if (selected.length) processFiles(selected);
+            if (selected.length) stageFiles(selected);
+            e.target.value = "";
           }}
         />
         
@@ -259,24 +269,42 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
               ))}
             </div>
           </motion.div>
-        ) : files.length > 0 ? (
-          <div className="space-y-2">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center justify-center gap-3">
-                <FileText className="w-5 h-5 text-loop" />
-                <span className="text-text text-sm">{f.name}</span>
-              </div>
-            ))}
-          </div>
         ) : (
           <>
             <Upload className="w-12 h-12 mx-auto text-text-dim mb-4" />
-            <p className="text-lg text-text mb-2">Drop your bank statements here</p>
+            <p className="text-lg text-text mb-2">{files.length > 0 ? "Drop more statements or click to add" : "Drop your bank statements here"}</p>
             <p className="text-sm text-text-dim">Upload one or multiple statements — PDF, PNG, or JPG</p>
             <p className="text-xs text-text-dim mt-4">Your files are processed securely and never stored</p>
           </>
         )}
       </div>
+
+      {/* Staged files list */}
+      {!analyzing && files.length > 0 && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center justify-between bg-white border border-border rounded-lg px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-4 h-4 text-loop" />
+                  <span className="text-sm text-text">{f.name}</span>
+                  <span className="text-xs text-text-dim">({(f.size / 1024).toFixed(0)} KB)</span>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="p-1 hover:bg-surface-dark rounded transition-colors">
+                  <X className="w-4 h-4 text-text-dim hover:text-danger" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => processFiles(files)}
+            className="w-full px-6 py-3 bg-loop hover:bg-loop-dark text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <Zap className="w-5 h-5" />
+            Scan {files.length} Statement{files.length > 1 ? "s" : ""}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -478,8 +506,9 @@ function ReferralSection({ data }: { data: AuditResult }) {
 
 /* ── FX Markup formatted description ── */
 function FxMarkupDescription({ description }: { description: string }) {
+  const desc = description || "";
   // Split on numbered patterns like (1), (2), 1., 2., etc.
-  const parts = description.split(/(?:\((\d+)\)\s*|\b(\d+)\.\s+(?=[A-Z$]))/).filter(Boolean);
+  const parts = desc.split(/(?:\((\d+)\)\s*|\b(\d+)\.\s+(?=[A-Z$]))/).filter(Boolean);
   
   // Try splitting on common transaction separators
   const items: string[] = [];
@@ -489,7 +518,7 @@ function FxMarkupDescription({ description }: { description: string }) {
   const numberedRegex = /\((\d+)\)\s*([^(]+?)(?=\(\d+\)|$)/g;
   let match;
   const numberedItems: string[] = [];
-  while ((match = numberedRegex.exec(description)) !== null) {
+  while ((match = numberedRegex.exec(desc)) !== null) {
     numberedItems.push(match[2].trim());
   }
   
@@ -497,7 +526,7 @@ function FxMarkupDescription({ description }: { description: string }) {
     items.push(...numberedItems);
   } else {
     // Try splitting by semicolons or period-separated calculations
-    const calcParts = description.split(/[;]|\.\s+(?=[A-Z0-9$])/);
+    const calcParts = desc.split(/[;]|\.\s+(?=[A-Z0-9$])/);
     if (calcParts.length > 2) {
       items.push(...calcParts.map(s => s.trim()).filter(Boolean));
     }
@@ -509,7 +538,7 @@ function FxMarkupDescription({ description }: { description: string }) {
     totalLine = items.splice(totalIdx, 1)[0];
   } else {
     // Look for total in original description
-    const totalMatch = description.match(/[Tt]otal[^.;]*(?:\$[\d,.]+)[^.;]*/);
+    const totalMatch = desc.match(/[Tt]otal[^.;]*(?:\$[\d,.]+)[^.;]*/);
     if (totalMatch) totalLine = totalMatch[0];
   }
 
@@ -529,7 +558,7 @@ function FxMarkupDescription({ description }: { description: string }) {
   }
 
   // Fallback: just show the description, highlight any total amount in red
-  const totalMatch = description.match(/(.*?)((?:Total|total)[^.]*\$[\d,.]+[^.]*)(.*)/);
+  const totalMatch = desc.match(/(.*?)((?:Total|total)[^.]*\$[\d,.]+[^.]*)(.*)/);
   if (totalMatch) {
     return (
       <div className="text-sm text-text">
@@ -540,7 +569,7 @@ function FxMarkupDescription({ description }: { description: string }) {
     );
   }
 
-  return <p className="text-sm text-text">{description}</p>;
+  return <p className="text-sm text-text">{desc}</p>;
 }
 
 /* ── Finding Card (collapsible) ── */
@@ -551,12 +580,13 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
 
   // Parse Loop alternative into structured data for compact display
   const parseLoopAlt = (alt: string, category: string) => {
+    const a = alt || "";
     // For account fees, simplify to just the Loop pricing
     if (category === "account_fee") {
       // Extract Loop plan prices if mentioned
-      const basicMatch = alt.match(/(?:Basic|free)[^$]*\$?(0|free)/i);
-      const plusMatch = alt.match(/Plus[^$]*\$(\d+)/i);
-      const powerMatch = alt.match(/Power[^$]*\$(\d+)/i);
+      const basicMatch = a.match(/(?:Basic|free)[^$]*\$?(0|free)/i);
+      const plusMatch = a.match(/Plus[^$]*\$(\d+)/i);
+      const powerMatch = a.match(/Power[^$]*\$(\d+)/i);
       if (basicMatch || plusMatch || powerMatch) {
         return {
           type: "plans" as const,
@@ -569,19 +599,19 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
     }
     if (category === "fx_markup") {
       // Show savings-focused one-liner
-      const savingsMatch = alt.match(/[Ss]av(?:e|ings?)[^$]*\$([\d,.]+)/);
+      const savingsMatch = a.match(/[Ss]av(?:e|ings?)[^$]*\$([\d,.]+)/);
       const savingsAmt = savingsMatch ? savingsMatch[1] : null;
       return { type: "text" as const, text: savingsAmt ? `With Loop Basic (0.5% FX): Save $${savingsAmt}/yr` : `With Loop Basic (0.5% FX): Dramatically lower FX costs` };
     }
-    return { type: "text" as const, text: alt };
+    return { type: "text" as const, text: a };
   };
 
   const loopData = parseLoopAlt(finding.loopAlternative, finding.category);
 
   // For account_fee, simplify the description
   const displayDescription = finding.category === "account_fee"
-    ? finding.description.replace(/\s*[-–—].*?(Loop|loop|plan).*$/i, "").replace(/\.\s*Loop.*$/i, ".")
-    : finding.description;
+    ? (finding.description || "").replace(/\s*[-–—].*?(Loop|loop|plan).*$/i, "").replace(/\.\s*Loop.*$/i, ".")
+    : (finding.description || "");
 
   return (
     <motion.div

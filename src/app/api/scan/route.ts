@@ -180,7 +180,6 @@ IMPORTANT: Even if a statement looks "clean" with few fees, dig deeper:
 - Per-transaction fees on e-Transfers or bill payments
 - Minimum balance requirements (opportunity cost)
 - NSF/overdraft charges
-- Paper statement fees
 - Inactive account fees
 - The ABSENCE of rewards (Loop gives 1-2x points on card spend)
 

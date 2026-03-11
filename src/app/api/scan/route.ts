@@ -223,12 +223,12 @@ Analyze and return ONLY this JSON (no markdown fences):
   
   "findings": [
     {
-      "category": "account_fee" | "fx_markup" | "wire_fee" | "etransfer_fee" | "payment_inefficiency" | "card_fee" | "other_fee",
+      "category": "account_fee" | "payment_fx" | "card_fx" | "wire_fee" | "etransfer_fee" | "payment_inefficiency" | "other_fee",
       "date": "YYYY-MM-DD or null",
-      "description": "what we found — for fx_markup, format each currency on its own line like: 'USD: $X,XXX × Y.YY% markup = $ZZZ\\nEUR: €X,XXX × Y.YY% markup = $ZZZ\\nGBP: £X,XXX × Y.YY% markup = $ZZZ\\nTotal bank FX markup: $ZZZ'. Do NOT include 'Calculations: N' or similar meta-text.",
-      "amount": number (the total fee/cost the bank charged — for fx_markup this is the TOTAL markup cost across all currencies),
-      "loopAlternative": "what Loop offers instead",
-      "savingsPerOccurrence": number (the ACTUAL savings = amount minus what the same activity would cost on Loop Basic. For fx_markup: amount minus total_fx_volume × 0.5%. For wire_fee: amount minus $0. NOT the same as amount unless Loop cost is truly $0.)
+      "description": "what we found — for payment_fx and card_fx, format each currency on its own line like: 'USD: $X,XXX × Y.YY% markup = $ZZZ\\nEUR: €X,XXX × Y.YY% markup = $ZZZ\\nTotal markup: $ZZZ'. Do NOT include 'Calculations: N' or similar meta-text.",
+      "amount": number (the total fee/cost the bank charged),
+      "loopAlternative": "what Loop offers instead — MUST include specific dollar amounts, e.g. 'Loop Basic (0.5% FX): $X,XXX × 0.5% = $YY vs your bank's $ZZZ'. Never say 'Dramatically lower' without numbers.",
+      "savingsPerOccurrence": number (the ACTUAL savings = amount minus what the same activity would cost on Loop Basic. For payment_fx/card_fx: amount minus total_fx_volume × 0.5%. For wire_fee: amount minus $0. NOT the same as amount unless Loop cost is truly $0.)
     }
   ],
   
@@ -306,8 +306,9 @@ CRITICAL GROUPING RULES — FOLLOW EXACTLY:
 - Group ALL similar fees into ONE finding per category. NEVER create two findings with the same category.
 - Account fees: If there are multiple account fees (e.g. USD account $30 + CAD account $30), create ONE finding: "Monthly account fees: 2 accounts × $30 = $60/mo" with amount: 60.
 - Wire fees: If there are 3 wires at $45 each, ONE finding: "Wire transfer fees: 3 × $45 = $135" with amount: 135.
-- FX markups: Group ALL foreign currency transactions into ONE "fx_markup" finding with the total markup cost.
-- Each category (account_fee, fx_markup, wire_fee, etransfer_fee, card_fee, other_fee) should appear AT MOST ONCE in findings.
+- FX markups on PAYMENTS (wires, EFT, invoices, supplier payments): Use "payment_fx" category. Group all payment FX into ONE finding.
+- FX markups on CARD transactions (credit/debit card purchases abroad): Use "card_fx" category. Group all card FX into ONE finding.
+- Each category (account_fee, payment_fx, card_fx, wire_fee, etransfer_fee, other_fee) should appear AT MOST ONCE in findings.
 - Aim for 3-6 total findings. If you have more than 6, you're not grouping enough.
 
 MATH RULES - FOLLOW EXACTLY:

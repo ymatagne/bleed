@@ -335,6 +335,8 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
 const categoryIcons: Record<string, typeof DollarSign> = {
   account_fee: Building2,
   fx_markup: TrendingDown,
+  payment_fx: TrendingDown,
+  card_fx: CreditCard,
   wire_fee: Zap,
   etransfer_fee: ArrowRight,
   payment_inefficiency: Zap,
@@ -345,6 +347,8 @@ const categoryIcons: Record<string, typeof DollarSign> = {
 const categoryLabels: Record<string, string> = {
   account_fee: "Account Fee",
   fx_markup: "FX Markup",
+  payment_fx: "Payment FX Markup",
+  card_fx: "Card FX Markup",
   wire_fee: "Wire Fee",
   etransfer_fee: "e-Transfer Fee",
   payment_inefficiency: "Inefficiency",
@@ -624,11 +628,9 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
       }
       return { type: "text" as const, text: "Loop Basic: $0/mo" };
     }
-    if (category === "fx_markup") {
-      // Show savings-focused one-liner
-      const savingsMatch = a.match(/[Ss]av(?:e|ings?)[^$]*\$([\d,.]+)/);
-      const savingsAmt = savingsMatch ? savingsMatch[1] : null;
-      return { type: "text" as const, text: savingsAmt ? `With Loop Basic (0.5% FX): Save $${savingsAmt}/yr` : `With Loop Basic (0.5% FX): Dramatically lower FX costs` };
+    if (category === "fx_markup" || category === "payment_fx" || category === "card_fx") {
+      // Show the Loop alternative text directly — AI now provides specific numbers
+      return { type: "text" as const, text: a || "Loop Basic: 0.5% FX rate" };
     }
     return { type: "text" as const, text: a };
   };
@@ -662,6 +664,8 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
               {finding.category === "account_fee" && "Loop Basic: $0/mo"}
               {finding.category === "wire_fee" && "Loop: $0 wire fees"}
               {finding.category === "fx_markup" && "Loop Basic: 0.5% FX rate"}
+              {finding.category === "payment_fx" && "Loop Basic: 0.5% FX on payments"}
+              {finding.category === "card_fx" && "Loop: 0% FX on card spend"}
               {finding.category === "etransfer_fee" && "Loop: Free unlimited e-Transfers"}
               {finding.category === "card_fee" && "Loop: No card fees"}
               {(finding.category === "other_fee" || finding.category === "payment_inefficiency") && "See Loop alternative ↓"}
@@ -695,7 +699,7 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
           >
             <div className="px-4 pb-4 space-y-3 border-t border-border-light pt-3">
               {/* Description */}
-              {finding.category === "fx_markup" ? (
+              {(finding.category === "fx_markup" || finding.category === "payment_fx" || finding.category === "card_fx") ? (
                 <FxMarkupDescription description={displayDescription} />
               ) : (
                 <p className="text-sm text-text">{displayDescription}</p>

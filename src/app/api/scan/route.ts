@@ -293,7 +293,7 @@ MATH RULES - FOLLOW EXACTLY:
 - FX markup calculation: If bank rate is 1.3850 and mid-market is 1.3567, markup = (1.3850 - 1.3567) / 1.3567 = 2.09%. Cost on $10,000 USD = $10,000 × 2.09% = $209 CAD
 - Annual projection: If statement covers 1 month, multiply by 12. If 3 months, multiply by 4. Be precise about the statement period.
 - Loop savings: Calculate EXACTLY using each plan's rate. Basic savings = bank FX cost - (volume × 0.5%) - $0/mo fee. Plus savings = bank FX cost - (volume × 0.25%) - $79×months. Power savings = bank FX cost - (volume × 0.10%) - $299×months.
-- Wire savings: Count wires × average fee ($40). Loop = $0 for wires.
+- Wire savings: Count wires × average fee ($45). Loop = $0 for wires.
 - Show your work in the description fields so users can verify the math.
 
 Be THOROUGH:

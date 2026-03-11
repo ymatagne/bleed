@@ -106,6 +106,14 @@ function getTotalIssueCount(findings: Finding[]): number {
   return total;
 }
 
+interface ScanState {
+  files: File[];
+  analyzing: boolean;
+  progress: string;
+  result: AuditResult | null;
+  error: string | null;
+}
+
 const banks = [
   { name: "RBC Royal Bank", markup: 2.5 },
   { name: "TD Canada Trust", markup: 2.6 },
@@ -116,13 +124,19 @@ const banks = [
   { name: "Other", markup: 2.5 },
 ];
 
-function ScanTab() {
-  const [files, setFiles] = useState<File[]>([]);
+function ScanTab({ scanState, setScanState }: { scanState: ScanState; setScanState: React.Dispatch<React.SetStateAction<ScanState>> }) {
+  const files = scanState.files;
+  const analyzing = scanState.analyzing;
+  const progress = scanState.progress;
+  const result = scanState.result;
+  const error = scanState.error;
   const [dragging, setDragging] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [progress, setProgress] = useState<string>("");
-  const [result, setResult] = useState<AuditResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  const setFiles = (f: File[]) => setScanState(s => ({ ...s, files: f }));
+  const setAnalyzing = (v: boolean) => setScanState(s => ({ ...s, analyzing: v }));
+  const setProgress = (v: string) => setScanState(s => ({ ...s, progress: v }));
+  const setResult = (v: AuditResult | null) => setScanState(s => ({ ...s, result: v }));
+  const setError = (v: string | null) => setScanState(s => ({ ...s, error: v }));
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -447,6 +461,73 @@ function ReferralSection({ data }: { data: AuditResult }) {
   );
 }
 
+/* ── FX Markup formatted description ── */
+function FxMarkupDescription({ description }: { description: string }) {
+  // Split on numbered patterns like (1), (2), 1., 2., etc.
+  const parts = description.split(/(?:\((\d+)\)\s*|\b(\d+)\.\s+(?=[A-Z$]))/).filter(Boolean);
+  
+  // Try splitting on common transaction separators
+  const items: string[] = [];
+  let totalLine = "";
+  
+  // Split by numbered items like "(1) ...", "(2) ..." or "1. ...", "2. ..."
+  const numberedRegex = /\((\d+)\)\s*([^(]+?)(?=\(\d+\)|$)/g;
+  let match;
+  const numberedItems: string[] = [];
+  while ((match = numberedRegex.exec(description)) !== null) {
+    numberedItems.push(match[2].trim());
+  }
+  
+  if (numberedItems.length > 1) {
+    items.push(...numberedItems);
+  } else {
+    // Try splitting by semicolons or period-separated calculations
+    const calcParts = description.split(/[;]|\.\s+(?=[A-Z0-9$])/);
+    if (calcParts.length > 2) {
+      items.push(...calcParts.map(s => s.trim()).filter(Boolean));
+    }
+  }
+  
+  // Extract total line (contains "total" keyword)
+  const totalIdx = items.findIndex(s => /total/i.test(s));
+  if (totalIdx >= 0) {
+    totalLine = items.splice(totalIdx, 1)[0];
+  } else {
+    // Look for total in original description
+    const totalMatch = description.match(/[Tt]otal[^.;]*(?:\$[\d,.]+)[^.;]*/);
+    if (totalMatch) totalLine = totalMatch[0];
+  }
+
+  if (items.length > 1) {
+    return (
+      <div className="text-sm text-text space-y-2">
+        <ul className="list-disc list-inside space-y-1">
+          {items.map((item, i) => (
+            <li key={i}>{item.replace(/[.,;]+$/, "")}</li>
+          ))}
+        </ul>
+        {totalLine && (
+          <p className="font-bold text-danger">{totalLine.replace(/[.,;]+$/, "")}</p>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: just show the description, highlight any total amount in red
+  const totalMatch = description.match(/(.*?)((?:Total|total)[^.]*\$[\d,.]+[^.]*)(.*)/);
+  if (totalMatch) {
+    return (
+      <div className="text-sm text-text">
+        <p>{totalMatch[1]}</p>
+        <p className="font-bold text-danger mt-1">{totalMatch[2]}</p>
+        {totalMatch[3] && <p>{totalMatch[3]}</p>}
+      </div>
+    );
+  }
+
+  return <p className="text-sm text-text">{description}</p>;
+}
+
 /* ── Finding Card (collapsible) ── */
 function FindingCard({ finding, index }: { finding: Finding; index: number }) {
   const [open, setOpen] = useState(false);
@@ -470,6 +551,12 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
         };
       }
       return { type: "text" as const, text: "Loop Basic: $0/mo" };
+    }
+    if (category === "fx_markup") {
+      // Show savings-focused one-liner
+      const savingsMatch = alt.match(/[Ss]av(?:e|ings?)[^$]*\$([\d,.]+)/);
+      const savingsAmt = savingsMatch ? savingsMatch[1] : null;
+      return { type: "text" as const, text: savingsAmt ? `With Loop Basic (0.5% FX): Save $${savingsAmt}/yr` : `With Loop Basic (0.5% FX): Dramatically lower FX costs` };
     }
     return { type: "text" as const, text: alt };
   };
@@ -498,7 +585,16 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
         </div>
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-loop-deep">{label}</span>
-          {finding.date && <span className="text-xs text-text-dim ml-2">· {finding.date}</span>}
+          {!open && (
+            <p className="text-xs text-green-600 mt-0.5">
+              {finding.category === "account_fee" && "Loop Basic: $0/mo"}
+              {finding.category === "wire_fee" && "Loop: $0 wire fees"}
+              {finding.category === "fx_markup" && "Loop Basic: 0.5% FX rate"}
+              {finding.category === "etransfer_fee" && "Loop: Free unlimited e-Transfers"}
+              {finding.category === "card_fee" && "Loop: No card fees"}
+              {(finding.category === "other_fee" || finding.category === "payment_inefficiency") && "See Loop alternative ↓"}
+            </p>
+          )}
         </div>
         <div className="text-right flex-shrink-0 mr-2">
           <p className="text-lg font-bold text-danger">{formatCurrency(finding.amount)}</p>
@@ -527,7 +623,11 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
           >
             <div className="px-4 pb-4 space-y-3 border-t border-border-light pt-3">
               {/* Description */}
-              <p className="text-sm text-text">{displayDescription}</p>
+              {finding.category === "fx_markup" ? (
+                <FxMarkupDescription description={displayDescription} />
+              ) : (
+                <p className="text-sm text-text">{displayDescription}</p>
+              )}
 
               {/* Loop alternative — compact comparison */}
               <div className="bg-loop/5 rounded-lg p-3">
@@ -566,10 +666,12 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
 }
 
 function FindingsSection({ findings }: { findings: Finding[] }) {
+  const visible = findings.filter(f => !(f.amount === 0 && f.savingsPerOccurrence === 0) && f.amount !== 0);
+  if (visible.length === 0) return null;
   return (
     <div className="space-y-3">
       <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">What We Found</h4>
-      {findings.map((finding, i) => (
+      {visible.map((finding, i) => (
         <FindingCard key={i} finding={finding} index={i} />
       ))}
     </div>
@@ -924,7 +1026,7 @@ function CalculatorTab() {
 
   const bank = banks[bankIdx];
   const bankFxCost = intlVolume * (bank.markup / 100);
-  const bankWireCost = wireCount * 40;
+  const bankWireCost = wireCount * 45;
   const bankMonthlyCost = bankFxCost + bankWireCost;
   const bankYearlyCost = bankMonthlyCost * 12;
 
@@ -971,7 +1073,7 @@ function CalculatorTab() {
               <span className="font-semibold text-danger">{formatCurrency(bankFxCost)}/mo</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text-muted">Wire fees ({wireCount} × $40)</span>
+              <span className="text-text-muted">Wire fees ({wireCount} × $45)</span>
               <span className="font-semibold text-danger">{formatCurrency(bankWireCost)}/mo</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
@@ -1066,9 +1168,6 @@ function CalculatorTab() {
         </button>
       </div>
 
-      <p className="text-xs text-text-dim text-center mt-6">
-        Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates. Actual rates may vary.
-      </p>
     </div>
   );
 }
@@ -1077,6 +1176,13 @@ export default function Tool() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [tab, setTab] = useState<"scan" | "calc">("scan");
+  const [scanState, setScanState] = useState<ScanState>({
+    files: [],
+    analyzing: false,
+    progress: "",
+    result: null,
+    error: null,
+  });
 
   return (
     <section id="tool" ref={ref} className="py-24 px-6 bg-surface">
@@ -1113,17 +1219,12 @@ export default function Tool() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            {tab === "scan" ? <ScanTab /> : <CalculatorTab />}
-          </motion.div>
-        </AnimatePresence>
+        <div style={{ display: tab === "scan" ? "block" : "none" }}>
+          <ScanTab scanState={scanState} setScanState={setScanState} />
+        </div>
+        <div style={{ display: tab === "calc" ? "block" : "none" }}>
+          <CalculatorTab />
+        </div>
 
         <p className="text-xs text-text-dim text-center mt-8">
           Loop&apos;s advertised FX rates are charged on top of plan fees. Savings estimates are approximate and based on current mid-market rates. Actual rates may vary.

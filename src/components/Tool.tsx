@@ -506,58 +506,62 @@ function ReferralSection({ data }: { data: AuditResult }) {
 
 /* ── FX Markup formatted description ── */
 function FxMarkupDescription({ description }: { description: string }) {
-  const desc = description || "";
-  // Split on numbered patterns like (1), (2), 1., 2., etc.
-  const parts = desc.split(/(?:\((\d+)\)\s*|\b(\d+)\.\s+(?=[A-Z$]))/).filter(Boolean);
+  const desc = (description || "").replace(/Calculations:\s*\d+\.?\s*/gi, "").trim();
   
-  // Try splitting on common transaction separators
-  const items: string[] = [];
-  let totalLine = "";
+  // Split on newlines first (AI now sends newline-separated currency lines)
+  const lines = desc.split(/\n/).map(s => s.trim()).filter(Boolean);
   
-  // Split by numbered items like "(1) ...", "(2) ..." or "1. ...", "2. ..."
-  const numberedRegex = /\((\d+)\)\s*([^(]+?)(?=\(\d+\)|$)/g;
-  let match;
-  const numberedItems: string[] = [];
-  while ((match = numberedRegex.exec(desc)) !== null) {
-    numberedItems.push(match[2].trim());
-  }
+  // Separate total line from currency lines
+  const totalIdx = lines.findIndex(s => /^total/i.test(s));
+  const totalLine = totalIdx >= 0 ? lines.splice(totalIdx, 1)[0] : null;
   
-  if (numberedItems.length > 1) {
-    items.push(...numberedItems);
-  } else {
-    // Try splitting by semicolons or period-separated calculations
-    const calcParts = desc.split(/[;]|\.\s+(?=[A-Z0-9$])/);
-    if (calcParts.length > 2) {
-      items.push(...calcParts.map(s => s.trim()).filter(Boolean));
-    }
-  }
+  // Filter out meta-text lines, keep currency/calculation lines
+  const currencyLines = lines.filter(s => 
+    /^(USD|EUR|GBP|CAD|CHF|JPY|AUD|Credit Card|Bank Wire|Hidden)/i.test(s) ||
+    /[\$€£¥]\d/.test(s) ||
+    /\d+(\.\d+)?%/.test(s)
+  );
   
-  // Extract total line (contains "total" keyword)
-  const totalIdx = items.findIndex(s => /total/i.test(s));
-  if (totalIdx >= 0) {
-    totalLine = items.splice(totalIdx, 1)[0];
-  } else {
-    // Look for total in original description
-    const totalMatch = desc.match(/[Tt]otal[^.;]*(?:\$[\d,.]+)[^.;]*/);
-    if (totalMatch) totalLine = totalMatch[0];
-  }
-
-  if (items.length > 1) {
+  // If we have structured currency lines, render as bullets
+  if (currencyLines.length > 0) {
+    // Any remaining lines that aren't currency lines go as intro text
+    const introLines = lines.filter(s => !currencyLines.includes(s) && !/^total/i.test(s));
     return (
       <div className="text-sm text-text space-y-2">
+        {introLines.length > 0 && <p className="text-text-muted">{introLines.join(". ")}</p>}
         <ul className="list-disc list-inside space-y-1">
-          {items.map((item, i) => (
-            <li key={i}>{item.replace(/[.,;]+$/, "")}</li>
+          {currencyLines.map((line, i) => (
+            <li key={i}>{line.replace(/^[-•]\s*/, "").replace(/[.,;]+$/, "")}</li>
           ))}
         </ul>
         {totalLine && (
-          <p className="font-bold text-danger">{totalLine.replace(/[.,;]+$/, "")}</p>
+          <p className="font-bold text-danger mt-1">{totalLine.replace(/[.,;]+$/, "")}</p>
         )}
       </div>
     );
   }
 
-  // Fallback: just show the description, highlight any total amount in red
+  // Fallback: try splitting on semicolons or " - " separators
+  const parts = desc.split(/[;]\s*|\s+-\s+(?=[A-Z€$£])/).map(s => s.trim()).filter(Boolean);
+  const fallbackTotal = parts.findIndex(s => /total/i.test(s));
+  const fallbackTotalLine = fallbackTotal >= 0 ? parts.splice(fallbackTotal, 1)[0] : null;
+  
+  if (parts.length > 1) {
+    return (
+      <div className="text-sm text-text space-y-2">
+        <ul className="list-disc list-inside space-y-1">
+          {parts.map((item, i) => (
+            <li key={i}>{item.replace(/[.,;]+$/, "")}</li>
+          ))}
+        </ul>
+        {fallbackTotalLine && (
+          <p className="font-bold text-danger mt-1">{fallbackTotalLine.replace(/[.,;]+$/, "")}</p>
+        )}
+      </div>
+    );
+  }
+
+  // Final fallback: highlight total amount in red
   const totalMatch = desc.match(/(.*?)((?:Total|total)[^.]*\$[\d,.]+[^.]*)(.*)/);
   if (totalMatch) {
     return (

@@ -225,10 +225,10 @@ Analyze and return ONLY this JSON (no markdown fences):
     {
       "category": "account_fee" | "fx_markup" | "wire_fee" | "etransfer_fee" | "payment_inefficiency" | "card_fee" | "other_fee",
       "date": "YYYY-MM-DD or null",
-      "description": "what we found",
-      "amount": number (the fee or cost),
+      "description": "what we found — for fx_markup, format each currency on its own line like: 'USD: $X,XXX × Y.YY% markup = $ZZZ\\nEUR: €X,XXX × Y.YY% markup = $ZZZ\\nGBP: £X,XXX × Y.YY% markup = $ZZZ\\nTotal bank FX markup: $ZZZ'. Do NOT include 'Calculations: N' or similar meta-text.",
+      "amount": number (the total fee/cost the bank charged — for fx_markup this is the TOTAL markup cost across all currencies),
       "loopAlternative": "what Loop offers instead",
-      "savingsPerOccurrence": number
+      "savingsPerOccurrence": number (the ACTUAL savings = amount minus what the same activity would cost on Loop Basic. For fx_markup: amount minus total_fx_volume × 0.5%. For wire_fee: amount minus $0. NOT the same as amount unless Loop cost is truly $0.)
     }
   ],
   

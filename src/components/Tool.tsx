@@ -1133,8 +1133,8 @@ function AuditReport({ data, onReset, ccFlag }: { data: AuditResult; onReset: ()
 
 const loopPlans = [
   { name: "Basic", monthlyFee: 0, fxRate: 0.5, features: ["Free USD/EUR/GBP accounts", "20 virtual cards", "1x points on CAD"] },
-  { name: "Plus", monthlyFee: 79, fxRate: 0.25, features: ["Unlimited virtual cards", "10 free physical cards", "2x points all spend", "Instant deposits"] },
-  { name: "Power", monthlyFee: 299, fxRate: 0.10, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x points all spend"] },
+  { name: "Plus", monthlyFee: 79, fxRate: 0.25, features: ["Unlimited virtual cards", "10 free physical cards", "2x CAD / 1x foreign points", "Instant deposits"] },
+  { name: "Power", monthlyFee: 299, fxRate: 0.10, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x CAD / 1x foreign points"] },
 ];
 
 function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
@@ -1353,6 +1353,18 @@ export default function Tool() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const ccFlag = useFeatureFlag("cc");
   const [tab, setTab] = useState<"scan" | "calc">("scan");
+
+  // Listen for calculator switch from hero button or URL param
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("calculator") === "true") setTab("calc");
+    }
+    const handler = () => setTab("calc");
+    window.addEventListener("switch-to-calculator", handler);
+    return () => window.removeEventListener("switch-to-calculator", handler);
+  }, []);
+
   const [scanState, setScanState] = useState<ScanState>({
     files: [],
     analyzing: false,

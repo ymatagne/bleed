@@ -56,6 +56,7 @@ export default function Hero() {
           </a>
           <a
             href="#tool"
+            onClick={() => window.dispatchEvent(new Event("switch-to-calculator"))}
             className="px-8 py-4 border border-border hover:border-loop text-text-muted hover:text-loop rounded-xl transition-all duration-300 text-lg"
           >
             Calculate Manually

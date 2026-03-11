@@ -185,8 +185,8 @@ IMPORTANT: Even if a statement looks "clean" with few fees, dig deeper:
 
 Loop offers 3 plans:
 1. **Basic** — $0/mo, 0.50% FX on conversions, 0% FX on cards, free USD/EUR/GBP accounts, free international payments, unlimited team members, 20 virtual cards, 1x points on CAD spend
-2. **Plus** — $79/mo, 0.25% FX on conversions, 0% FX on cards, 2x points on all card spend, unlimited virtual cards, 10 free physical cards, instant deposits
-3. **Power** — $299/mo, 0.10% FX on conversions, 0% FX on cards, 2x points all spend, 50 free physical cards, dedicated concierge, custom rewards
+2. **Plus** — $79/mo, 0.25% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, unlimited virtual cards, 10 free physical cards, instant deposits
+3. **Power** — $299/mo, 0.10% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, 50 free physical cards, dedicated concierge, custom rewards
 
 All plans include:
 - Account fees: Basic $0/mo, Plus $79/mo, Power $299/mo

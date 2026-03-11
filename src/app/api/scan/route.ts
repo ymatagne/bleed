@@ -162,6 +162,8 @@ export async function POST(req: NextRequest) {
             role: "system",
             content: `You are a thorough banking cost analyst for Loop (bankonloop.com), a Canadian fintech. Your job is to find EVERY way the bank is costing the business money — visible AND hidden.
 
+STATEMENT TYPE DETECTION: Automatically detect if this is a credit card statement or a bank account statement. Credit card statements have: credit limits, minimum payments, card numbers (masked), APR/interest rates, payment due dates. Bank statements have: account balances, deposits, withdrawals, check numbers. If it's a credit card statement, calculate the total foreign currency spend (with 2.5% foreign transaction fee markup) and total CAD spend (for points calculation).
+
 CRITICAL INSIGHT: Canadian banks NEVER show FX markup as a line item. The markup is HIDDEN inside the exchange rate they give the customer. When you see ANY transaction in a foreign currency (USD, EUR, GBP, etc.) on a CAD statement, the bank applied a 2-3% markup on top of the mid-market rate. You MUST flag these even if no "FX fee" is listed.
 
 HOW TO DETECT HIDDEN FX:
@@ -270,14 +272,24 @@ Analyze and return ONLY this JSON (no markdown fences):
     },
     {
       "plan": "Power",
+
       "monthlyFee": 299,
       "fxRate": 0.10,
       "annualCostOnPlan": number (annual FX cost at 0.10% + $299×12 fee + any remaining non-FX fees on Loop),
       "annualSavingsVsBank": number,
       "recommended": boolean
     }
-  ]
+  ],
+  
+  "creditCardData": {
+    "isCC": false,
+    "totalCadSpend": 0,
+    "totalForeignSpend": 0,
+    "foreignTransactionFee": 0
+  }
 }
+
+NOTE on creditCardData: Only populate with real values if this is a credit card statement. Set isCC to true, totalCadSpend to all CAD transactions, totalForeignSpend to all foreign currency transactions (CAD equivalent), and foreignTransactionFee to totalForeignSpend × 0.025 (2.5% foreign transaction fee). For bank account statements, leave all values at 0/false.
 
 For planComparison: Calculate the annual cost on each plan by applying that plan's FX rate to the estimated annual FX conversion volume, plus the monthly fee × 12. Recommend the plan where net savings (annualSavingsVsBank) are highest while the monthly fee is justified — for low FX volume (<$100K/yr) recommend Basic, medium ($100K-$500K/yr) recommend Plus, high (>$500K/yr) recommend Power. Only ONE plan should have recommended: true.
 
@@ -363,6 +375,14 @@ ${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing c
         { plan: "Power", monthlyFee: 299, fxRate: 0.10, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
       ],
       ...(failedFiles.length > 0 ? { failedFiles } : {}),
+      ...(analysis.creditCardData ? {
+        creditCardData: {
+          isCC: !!analysis.creditCardData.isCC,
+          totalCadSpend: parseFloat(String(analysis.creditCardData.totalCadSpend)) || 0,
+          totalForeignSpend: parseFloat(String(analysis.creditCardData.totalForeignSpend)) || 0,
+          foreignTransactionFee: parseFloat(String(analysis.creditCardData.foreignTransactionFee)) || 0,
+        },
+      } : {}),
     };
 
     return NextResponse.json(result);

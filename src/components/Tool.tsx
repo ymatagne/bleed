@@ -9,6 +9,7 @@ import { generateAuditPdf } from "@/lib/generatePdf";
 import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
 import { useSignupModal } from "./SignupModalProvider";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface Finding {
   category: string;
@@ -54,6 +55,12 @@ interface AuditResult {
     annualSavings: number;
   };
   planComparison?: PlanComparison[];
+  creditCardData?: {
+    isCC: boolean;
+    totalCadSpend: number;
+    totalForeignSpend: number;
+    foreignTransactionFee: number;
+  };
 }
 
 /** Sanitize numeric fields from AI response to prevent NaN */
@@ -88,6 +95,14 @@ function sanitizeAuditResult(data: AuditResult): AuditResult {
       annualCostOnPlan: parseFloat(String(p.annualCostOnPlan)) || 0,
       annualSavingsVsBank: parseFloat(String(p.annualSavingsVsBank)) || 0,
     })),
+    ...(data.creditCardData ? {
+      creditCardData: {
+        isCC: !!data.creditCardData.isCC,
+        totalCadSpend: parseFloat(String(data.creditCardData.totalCadSpend)) || 0,
+        totalForeignSpend: parseFloat(String(data.creditCardData.totalForeignSpend)) || 0,
+        foreignTransactionFee: parseFloat(String(data.creditCardData.foreignTransactionFee)) || 0,
+      },
+    } : {}),
   };
 }
 
@@ -124,7 +139,7 @@ const banks = [
   { name: "Other", markup: 2.5 },
 ];
 
-function ScanTab({ scanState, setScanState }: { scanState: ScanState; setScanState: React.Dispatch<React.SetStateAction<ScanState>> }) {
+function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; setScanState: React.Dispatch<React.SetStateAction<ScanState>>; ccFlag: boolean }) {
   const files = scanState.files;
   const analyzing = scanState.analyzing;
   const progress = scanState.progress;
@@ -174,7 +189,7 @@ function ScanTab({ scanState, setScanState }: { scanState: ScanState; setScanSta
     }
   };
 
-  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); }} />;
+  if (result) return <AuditReport data={result} onReset={() => { setFiles([]); setResult(null); setError(null); }} ccFlag={ccFlag} />;
 
   return (
     <div className="space-y-6">
@@ -679,7 +694,40 @@ function FindingsSection({ findings }: { findings: Finding[] }) {
 }
 
 /* ── Audit Report with Email Gate ── */
-function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void }) {
+/* ── Points Savings Section for CC scan results ── */
+function PointsSavingsSection({ creditCardData }: { creditCardData: NonNullable<AuditResult["creditCardData"]> }) {
+  const { totalCadSpend, totalForeignSpend } = creditCardData;
+  const plans = [
+    { name: "Basic", monthly: totalCadSpend * 0.005, color: "text-loop" },
+    { name: "Plus", monthly: (totalCadSpend * 0.01) + (totalForeignSpend * 0.005), color: "text-loop" },
+    { name: "Power", monthly: (totalCadSpend + totalForeignSpend) * 0.01, color: "text-loop" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <h4 className="font-semibold text-sm uppercase tracking-wider text-text-dim">Additional Savings with Loop Points</h4>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {plans.map((plan) => (
+          <div key={plan.name} className="bg-white border border-border rounded-xl p-5">
+            <h5 className="font-bold text-loop-deep mb-3">{plan.name}</h5>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-text-dim">Points value / mo</span>
+                <span className="font-semibold text-loop">{formatCurrency(plan.monthly)}</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-2">
+                <span className="text-text-dim">Points value / yr</span>
+                <span className="font-bold text-loop text-lg">{formatCurrency(plan.monthly * 12)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AuditReport({ data, onReset, ccFlag }: { data: AuditResult; onReset: () => void; ccFlag: boolean }) {
   const { openSignup } = useSignupModal();
   const isDemo = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("demo") === "true";
   const [unlocked, setUnlocked] = useState(isDemo);
@@ -985,6 +1033,11 @@ function AuditReport({ data, onReset }: { data: AuditResult; onReset: () => void
             })()}
           </div>
 
+          {/* Points Savings (CC feature flag) */}
+          {ccFlag && data.creditCardData?.isCC && (
+            <PointsSavingsSection creditCardData={data.creditCardData} />
+          )}
+
           {/* Referral / Share Section */}
           <ReferralSection data={data} />
 
@@ -1018,16 +1071,19 @@ const loopPlans = [
   { name: "Power", monthlyFee: 299, fxRate: 0.10, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x points all spend"] },
 ];
 
-function CalculatorTab() {
+function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
   const { openSignup } = useSignupModal();
   const [intlVolume, setIntlVolume] = useState(50000);
   const [wireCount, setWireCount] = useState(5);
   const [bankIdx, setBankIdx] = useState(0);
+  const [ccForeignSpend, setCcForeignSpend] = useState(0);
+  const [ccCadSpend, setCcCadSpend] = useState(0);
 
   const bank = banks[bankIdx];
   const bankFxCost = intlVolume * (bank.markup / 100);
   const bankWireCost = wireCount * 45;
-  const bankMonthlyCost = bankFxCost + bankWireCost;
+  const ccFxMarkup = ccFlag ? ccForeignSpend * (bank.markup / 100 + 0.025) : 0;
+  const bankMonthlyCost = bankFxCost + bankWireCost + ccFxMarkup;
   const bankYearlyCost = bankMonthlyCost * 12;
 
   const planResults = loopPlans.map(plan => {
@@ -1045,7 +1101,7 @@ function CalculatorTab() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-text-muted mb-2">Monthly international transaction volume (CAD)</label>
+            <label className="block text-sm text-text-muted mb-2">{ccFlag ? "Monthly international wire/payment volume (CAD)" : "Monthly international transaction volume (CAD)"}</label>
             <input type="range" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Number(e.target.value))} className="w-full accent-loop" />
             <input type="number" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Math.max(1000, Math.min(1000000, Number(e.target.value) || 1000)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
           </div>
@@ -1064,6 +1120,21 @@ function CalculatorTab() {
           </div>
         </div>
 
+        {ccFlag && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-text-muted mb-2">Monthly credit card spend in foreign currencies (CAD equivalent)</label>
+              <input type="range" min={0} max={500000} step={1000} value={ccForeignSpend} onChange={(e) => setCcForeignSpend(Number(e.target.value))} className="w-full accent-loop" />
+              <input type="number" min={0} max={500000} step={1000} value={ccForeignSpend} onChange={(e) => setCcForeignSpend(Math.max(0, Math.min(500000, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
+            </div>
+            <div>
+              <label className="block text-sm text-text-muted mb-2">Monthly CAD credit card spend</label>
+              <input type="range" min={0} max={1000000} step={1000} value={ccCadSpend} onChange={(e) => setCcCadSpend(Number(e.target.value))} className="w-full accent-loop" />
+              <input type="number" min={0} max={1000000} step={1000} value={ccCadSpend} onChange={(e) => setCcCadSpend(Math.max(0, Math.min(1000000, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
+            </div>
+          </div>
+        )}
+
         {/* Bank cost breakdown */}
         <div className="bg-white border-2 border-danger/20 rounded-xl p-5">
           <p className="text-sm font-semibold text-text-dim uppercase tracking-wider mb-3">{bank.name} costs you</p>
@@ -1076,6 +1147,12 @@ function CalculatorTab() {
               <span className="text-text-muted">Wire fees ({wireCount} × $45)</span>
               <span className="font-semibold text-danger">{formatCurrency(bankWireCost)}/mo</span>
             </div>
+            {ccFlag && ccForeignSpend > 0 && (
+              <div className="flex justify-between">
+                <span className="text-text-muted">CC foreign txn fee ({(bank.markup + 2.5).toFixed(1)}% × {formatCurrency(ccForeignSpend)})</span>
+                <span className="font-semibold text-danger">{formatCurrency(ccFxMarkup)}/mo</span>
+              </div>
+            )}
             <div className="border-t border-border pt-2 flex justify-between">
               <span className="font-semibold text-text">Total monthly cost</span>
               <span className="text-xl font-bold text-danger">{formatCurrency(bankMonthlyCost)}/mo</span>
@@ -1125,6 +1202,12 @@ function CalculatorTab() {
                     <span className={isBest ? "text-white/60" : "text-text-dim"}>Wire fees</span>
                     <span className={`font-semibold ${isBest ? "text-[#C4F6C6]" : "text-loop"}`}>$0 (free)</span>
                   </div>
+                  {ccFlag && ccForeignSpend > 0 && (
+                    <div className="flex justify-between">
+                      <span className={isBest ? "text-white/60" : "text-text-dim"}>CC foreign txn fee</span>
+                      <span className={`font-semibold ${isBest ? "text-[#C4F6C6]" : "text-loop"}`}>$0 (0% FX)</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className={isBest ? "text-white/60" : "text-text-dim"}>Plan fee</span>
                     <span className={`font-semibold ${isBest ? "text-white" : "text-text"}`}>{plan.monthlyFee === 0 ? "$0" : formatCurrency(plan.monthlyFee)}</span>
@@ -1158,6 +1241,33 @@ function CalculatorTab() {
         </div>
       </div>
 
+      {ccFlag && (ccCadSpend > 0 || ccForeignSpend > 0) && (
+        <div className="space-y-4">
+          <h4 className="text-center text-lg font-bold text-loop-deep">Additional Savings with Loop Points</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { name: "Basic", monthly: ccCadSpend * 0.005 },
+              { name: "Plus", monthly: (ccCadSpend * 0.01) + (ccForeignSpend * 0.005) },
+              { name: "Power", monthly: (ccCadSpend + ccForeignSpend) * 0.01 },
+            ].map((p) => (
+              <div key={p.name} className="bg-white border border-border rounded-xl p-5">
+                <h5 className="font-bold text-loop-deep mb-3">{p.name}</h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-text-dim">Points value / mo</span>
+                    <span className="font-semibold text-loop">{formatCurrency(p.monthly)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-2">
+                    <span className="text-text-dim">Points value / yr</span>
+                    <span className="font-bold text-loop text-lg">{formatCurrency(p.monthly * 12)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="text-center">
         <button
           onClick={openSignup}
@@ -1175,6 +1285,7 @@ function CalculatorTab() {
 export default function Tool() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ccFlag = useFeatureFlag("cc");
   const [tab, setTab] = useState<"scan" | "calc">("scan");
   const [scanState, setScanState] = useState<ScanState>({
     files: [],
@@ -1220,10 +1331,10 @@ export default function Tool() {
         </div>
 
         <div style={{ display: tab === "scan" ? "block" : "none" }}>
-          <ScanTab scanState={scanState} setScanState={setScanState} />
+          <ScanTab scanState={scanState} setScanState={setScanState} ccFlag={ccFlag} />
         </div>
         <div style={{ display: tab === "calc" ? "block" : "none" }}>
-          <CalculatorTab />
+          <CalculatorTab ccFlag={ccFlag} />
         </div>
 
         <p className="text-xs text-text-dim text-center mt-8">

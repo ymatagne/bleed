@@ -317,6 +317,7 @@ MATH RULES - FOLLOW EXACTLY:
 - Loop savings: Calculate EXACTLY using each plan's rate. Basic savings = bank FX cost - (volume × 0.5%) - $0/mo fee. Plus savings = bank FX cost - (volume × 0.25%) - $79×months. Power savings = bank FX cost - (volume × 0.10%) - $299×months.
 - Wire savings: Count wires × average fee ($45). Loop = $0 for wires.
 - Show your work in the description fields so users can verify the math.
+- CRITICAL: All JSON number fields MUST be plain numbers (e.g. 6468.36), NOT math expressions (e.g. "596 * 12 - 687 = 6468.36"). Do your math, then put ONLY the final result as the value.
 
 Be THOROUGH:
 - Flag monthly/account fees (Loop Basic: $0/mo, Plus: $79/mo, Power: $299/mo) — even $3.95/mo adds up
@@ -351,12 +352,26 @@ ${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing c
     // Strip markdown code fences if present
     rawContent = rawContent.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
 
+    // Sanitize math expressions in JSON number fields: "596.28 * 12 - 687 = 6468.36" → 6468.36
+    // Match patterns like: number [operators numbers]+ = final_number (keeping only the final number)
+    rawContent = rawContent.replace(/:\s*(-?\d[\d.,]*\s*[+\-*/×]\s*[\d.,\s()+\-*/×=]+?=\s*(-?[\d,.]+))\s*([,}\]])/g, 
+      (_m: string, _expr: string, finalNum: string, ending: string) => `: ${finalNum.replace(/,/g, "")}${ending}`
+    );
+
     let analysis;
     try {
       analysis = JSON.parse(rawContent);
     } catch {
-      console.error("Failed to parse analysis JSON:", rawContent);
-      return NextResponse.json({ error: "Failed to parse analysis results. The AI returned an unexpected format." }, { status: 502 });
+      // Second attempt: try to fix remaining math expressions more aggressively
+      rawContent = rawContent.replace(/:\s*"?(-?\d[^,}\]"]*=\s*(-?[\d,.]+))"?\s*([,}\]])/g,
+        (_m: string, _expr: string, finalNum: string, ending: string) => `: ${finalNum.replace(/,/g, "")}${ending}`
+      );
+      try {
+        analysis = JSON.parse(rawContent);
+      } catch {
+        console.error("Failed to parse analysis JSON:", rawContent.slice(0, 500));
+        return NextResponse.json({ error: "Failed to parse analysis results. Please try again." }, { status: 502 });
+      }
     }
 
     // Ensure required fields with defaults

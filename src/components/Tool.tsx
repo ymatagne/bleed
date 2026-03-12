@@ -295,7 +295,7 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
         ) : (
           <>
             <Upload className="w-12 h-12 mx-auto text-text-dim mb-4" />
-            <p className="text-lg text-text mb-2">{files.length > 0 ? "Drop more statements or click to add" : "Drop your bank statements here"}</p>
+            <p className="text-lg text-text mb-2">{files.length > 0 ? "Drop more statements or click to add" : "Drop your bank and credit card statements here"}</p>
             <p className="text-sm text-text-dim">Upload one or multiple statements — PDF, PNG, or JPG</p>
             <p className="text-xs text-text-dim mt-4">Your files are processed securely and never stored</p>
           </>

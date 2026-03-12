@@ -531,6 +531,68 @@ function ReferralSection({ data }: { data: AuditResult }) {
   );
 }
 
+/* ── Calculator Referral Section ── */
+function CalculatorReferralSection({ bankYearlyCost, annualSavings }: { bankYearlyCost: number; annualSavings: number }) {
+  const [copied, setCopied] = useState(false);
+  const refCode = useMemo(() => {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }, []);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const referralUrl = `${baseUrl}/?ref=${refCode}&calculator=true`;
+  const msg = `I just found out my bank was charging me ${formatCurrency(bankYearlyCost)}/yr in hidden FX fees. I'm saving ${formatCurrency(annualSavings)}/yr by switching to Loop. See what your bank is hiding:`;
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${msg} ${referralUrl}`)}`;
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralUrl)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(msg)}&url=${encodeURIComponent(referralUrl)}`;
+  const emailUrl = `mailto:?subject=${encodeURIComponent("Your bank might be hiding fees too")}&body=${encodeURIComponent(`${msg}\n\n${referralUrl}`)}`;
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(referralUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-[#01251e] to-[#004639] rounded-2xl p-6 text-white">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-full bg-[#C4F6C6]/20 flex items-center justify-center">
+          <span className="text-xl">🏆</span>
+        </div>
+        <div>
+          <h4 className="text-lg font-bold">Challenge a Friend</h4>
+          <p className="text-sm text-white/60">Think their bank is better? Prove it.</p>
+        </div>
+      </div>
+      <p className="text-sm text-white/70 mb-4">
+        Share this tool and help someone else discover how much their bank is really costing them. You&apos;re saving <span className="text-[#C4F6C6] font-bold">{formatCurrency(annualSavings)}/yr</span> — they could too.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#1da851] text-white text-sm font-medium rounded-lg transition-colors">
+          <MessageCircle className="w-4 h-4" /> WhatsApp
+        </a>
+        <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-[#0A66C2] hover:bg-[#004182] text-white text-sm font-medium rounded-lg transition-colors">
+          <Linkedin className="w-4 h-4" /> LinkedIn
+        </a>
+        <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+          Post
+        </a>
+        <a href={emailUrl} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          <Mail className="w-4 h-4" /> Email
+        </a>
+        <button onClick={copyLink} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+          {copied ? <Check className="w-4 h-4 text-[#C4F6C6]" /> : <Copy className="w-4 h-4" />}
+          {copied ? "Copied!" : "Copy Link"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── FX Markup formatted description ── */
 function FxMarkupDescription({ description }: { description: string }) {
   const desc = (description || "").replace(/Calculations:\s*\d+\.?\s*/gi, "").trim();
@@ -1338,7 +1400,74 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
         </div>
       )}
 
-      <div className="text-center">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button
+          onClick={() => {
+            try {
+              const bestPlan = planResults[bestIdx];
+              const findings: { category: string; date: string | null; description: string; amount: number; loopAlternative: string; savingsPerOccurrence: number }[] = [];
+              if (bankFxCost > 0) {
+                findings.push({
+                  category: "fx_markup",
+                  date: null,
+                  description: `FX markup of ${bank.markup}% on ${formatCurrency(intlVolume)}/mo international volume`,
+                  amount: bankFxCost,
+                  loopAlternative: `Loop Basic: ${loopPlans[0].fxRate}% FX rate`,
+                  savingsPerOccurrence: bankFxCost - (intlVolume * (loopPlans[0].fxRate / 100)),
+                });
+              }
+              if (bankWireCost > 0) {
+                findings.push({
+                  category: "wire_fee",
+                  date: null,
+                  description: `${wireCount} international wire${wireCount !== 1 ? "s" : ""} × $45 each`,
+                  amount: bankWireCost,
+                  loopAlternative: "Loop: $0 wire fees",
+                  savingsPerOccurrence: bankWireCost,
+                });
+              }
+              const pdfData = {
+                bankName: bank.name,
+                statementPeriod: "Calculator Estimate",
+                currency: "CAD",
+                findings,
+                recommendations: [
+                  {
+                    title: "Switch to Loop",
+                    description: `Based on your monthly volume of ${formatCurrency(intlVolume)} in international transactions and ${wireCount} wire${wireCount !== 1 ? "s" : ""}, the ${bestPlan.name} plan offers the best value.`,
+                    estimatedAnnualSavings: bestPlan.annualSavings,
+                    priority: "high" as const,
+                  },
+                ],
+                summary: {
+                  totalFeesFound: bankMonthlyCost,
+                  totalFxMarkups: bankFxCost,
+                  totalAccountFees: 0,
+                  totalWireFees: bankWireCost,
+                  totalOtherFees: ccFxMarkup,
+                  annualProjection: bankYearlyCost,
+                  loopAnnualCost: bestPlan.loopYearlyCost,
+                  annualSavings: bestPlan.annualSavings,
+                },
+                planComparison: planResults.map((p, i) => ({
+                  plan: p.name,
+                  monthlyFee: p.monthlyFee,
+                  fxRate: p.fxRate,
+                  annualCostOnPlan: p.loopYearlyCost,
+                  annualSavingsVsBank: p.annualSavings,
+                  recommended: i === bestIdx,
+                })),
+              };
+              generateAuditPdf(pdfData);
+            } catch {
+              // silently fail
+            }
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 border-2 border-loop text-loop hover:bg-loop/5 font-semibold rounded-xl transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Download PDF
+        </button>
         <button
           onClick={openSignup}
           className="inline-flex items-center gap-2 px-8 py-4 bg-[#004639] hover:bg-[#01251e] text-white font-semibold rounded-xl transition-colors text-lg"
@@ -1347,6 +1476,14 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Challenge a Friend */}
+      {planResults[bestIdx].annualSavings > 0 && (
+        <CalculatorReferralSection
+          bankYearlyCost={bankYearlyCost}
+          annualSavings={planResults[bestIdx].annualSavings}
+        />
+      )}
 
     </div>
   );

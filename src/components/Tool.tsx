@@ -1492,7 +1492,7 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
 export default function Tool() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const ccFlag = useFeatureFlag("cc");
+  const ccFlag = true; // CC features enabled for everyone
   const [tab, setTab] = useState<"scan" | "calc">("scan");
 
   // Listen for calculator switch from hero button or URL param

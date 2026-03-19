@@ -83,7 +83,7 @@ const BANKS: Provider[] = [
 ];
 
 const FINTECHS: Provider[] = [
-  { name: "Veem", markup: 0.015, wireFee: 0, kind: "fintech" },
+  { name: "Venn", markup: 0.015, wireFee: 0, kind: "fintech" },
   { name: "Wise", markup: 0.006, wireFee: 5, kind: "fintech" },
 ];
 

@@ -164,7 +164,11 @@ export async function POST(req: NextRequest) {
 
 STATEMENT TYPE DETECTION: Automatically detect if this is a credit card statement or a bank account statement. Credit card statements have: credit limits, minimum payments, card numbers (masked), APR/interest rates, payment due dates. Bank statements have: account balances, deposits, withdrawals, check numbers. If it's a credit card statement, calculate the total foreign currency spend (with 2.5% foreign transaction fee markup) and total CAD spend (for points calculation).
 
-CRITICAL INSIGHT: Canadian banks NEVER show FX markup as a line item. The markup is HIDDEN inside the exchange rate they give the customer. When you see ANY transaction in a foreign currency (USD, EUR, GBP, etc.) on a CAD statement, the bank applied a 2-3% markup on top of the mid-market rate. You MUST flag these even if no "FX fee" is listed.
+CRITICAL INSIGHT: Canadian banks NEVER show FX markup as a line item. The markup is HIDDEN inside the exchange rate they give the customer. When you see ANY transaction in a foreign currency (USD, EUR, GBP, etc.) on a CAD statement, the bank applied a markup on top of the mid-market rate. Use these precise rates:
+- Credit card foreign transactions: ~5% total (2.5% FX markup + 2.5% foreign transaction fee)
+- Bank wire/payment FX: ~2% markup
+- Other FX providers (Wise, Venn, etc.): ~0.6% markup
+You MUST flag these even if no "FX fee" is listed.
 
 HOW TO DETECT HIDDEN FX:
 - Any USD/EUR/GBP debit or credit on a CAD account = the bank converted at their inflated rate
@@ -173,7 +177,7 @@ HOW TO DETECT HIDDEN FX:
 - "Foreign exchange" or "FX" line items = obvious, but rare
 - Payments to foreign companies/suppliers = likely converted from CAD
 - If the statement shows both CAD and foreign amounts for the same transaction, calculate the actual rate used and compare to mid-market to find the exact markup %
-- If only one currency is shown, ASSUME 2.5% markup on the full amount for that bank
+- If only one currency is shown, ASSUME 2% markup for wire/payment FX or 5% for credit card foreign transactions
 
 IMPORTANT: Even if a statement looks "clean" with few fees, dig deeper:
 - Monthly account fees (even $4.95/mo = $59/yr — Loop Basic has $0 monthly fees, Plus is $79/mo, Power is $299/mo)
@@ -196,6 +200,8 @@ All plans include:
 - Free e-Transfers (unlimited)
 - Corporate credit cards with rewards
 - Up to $1M credit limits
+
+IMPORTANT: Do NOT claim that a customer's existing credit card doesn't offer rewards unless you're certain. Major credit cards (Amex, Visa Infinite, Mastercard World Elite) typically have their own rewards programs. Only compare Loop's points as an ADDITIONAL benefit, not as a replacement for missing rewards. Frame it as: "In addition to your existing card rewards, Loop offers..." rather than "Your card doesn't give you rewards."
 
 Be THOROUGH in your analysis. Your job is to help the customer understand how much they are paying in bank fees and markups. Find at least 3 findings for any statement — there is ALWAYS something.
 

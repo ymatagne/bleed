@@ -298,6 +298,9 @@ function ScanTab({ scanState, setScanState, ccFlag }: { scanState: ScanState; se
             <p className="text-lg text-text mb-2">{files.length > 0 ? "Drop more statements or click to add" : "Drop your bank and credit card statements here"}</p>
             <p className="text-sm text-text-dim">Upload one or multiple statements — PDF, PNG, or JPG</p>
             <p className="text-xs text-text-dim mt-4">Your files are processed securely and never stored</p>
+            <a href="/example-statement.pdf" download className="inline-flex items-center gap-1 text-xs text-loop hover:text-loop-dark mt-2 underline underline-offset-2">
+              Don&apos;t want to upload your own? Try our example statement →
+            </a>
           </>
         )}
       </div>
@@ -1206,15 +1209,18 @@ const loopPlans = [
 function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
   const { openSignup } = useSignupModal();
   const [intlVolume, setIntlVolume] = useState(50000);
-  const [wireCount, setWireCount] = useState(5);
+  const [outgoingWires, setOutgoingWires] = useState(4);
+  const [incomingWires, setIncomingWires] = useState(1);
   const [bankIdx, setBankIdx] = useState(0);
   const [ccForeignSpend, setCcForeignSpend] = useState(0);
   const [ccCadSpend, setCcCadSpend] = useState(0);
 
   const bank = banks[bankIdx];
-  const bankFxCost = intlVolume * (bank.markup / 100);
-  const bankWireCost = wireCount * 45;
-  const ccFxMarkup = ccFlag ? ccForeignSpend * (bank.markup / 100 + 0.025) : 0;
+  const bankFxCost = intlVolume * 0.02; // 2% bank FX markup on wires/payments
+  const bankOutgoingWireCost = outgoingWires * 45;
+  const bankIncomingWireCost = incomingWires * 20;
+  const bankWireCost = bankOutgoingWireCost + bankIncomingWireCost;
+  const ccFxMarkup = ccFlag ? ccForeignSpend * 0.05 : 0; // 5% CC FX (2.5% markup + 2.5% foreign txn fee)
   const bankMonthlyCost = bankFxCost + bankWireCost + ccFxMarkup;
   const bankYearlyCost = bankMonthlyCost * 12;
 
@@ -1231,16 +1237,11 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
   return (
     <div className="space-y-8">
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-text-muted mb-2">{ccFlag ? "Monthly international wire/payment volume (CAD)" : "Monthly international transaction volume (CAD)"}</label>
             <input type="range" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Number(e.target.value))} className="w-full accent-loop" />
             <input type="number" min={1000} max={1000000} step={1000} value={intlVolume} onChange={(e) => setIntlVolume(Math.max(1000, Math.min(1000000, Number(e.target.value) || 1000)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
-          </div>
-          <div>
-            <label className="block text-sm text-text-muted mb-2">Number of international wires per month</label>
-            <input type="range" min={0} max={50} step={1} value={wireCount} onChange={(e) => setWireCount(Number(e.target.value))} className="w-full accent-loop" />
-            <input type="number" min={0} max={50} step={1} value={wireCount} onChange={(e) => setWireCount(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
           </div>
           <div>
             <label className="block text-sm text-text-muted mb-2">Current Bank</label>
@@ -1249,6 +1250,18 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
                 <option key={b.name} value={i}>{b.name} (~{b.markup}% markup)</option>
               ))}
             </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-text-muted mb-2">Outgoing international wires per month ($45/wire)</label>
+            <input type="range" min={0} max={50} step={1} value={outgoingWires} onChange={(e) => setOutgoingWires(Number(e.target.value))} className="w-full accent-loop" />
+            <input type="number" min={0} max={50} step={1} value={outgoingWires} onChange={(e) => setOutgoingWires(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
+          </div>
+          <div>
+            <label className="block text-sm text-text-muted mb-2">Incoming international wires per month ($20/wire)</label>
+            <input type="range" min={0} max={50} step={1} value={incomingWires} onChange={(e) => setIncomingWires(Number(e.target.value))} className="w-full accent-loop" />
+            <input type="number" min={0} max={50} step={1} value={incomingWires} onChange={(e) => setIncomingWires(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} className="w-full mt-1 bg-white border border-border rounded-lg px-3 py-1.5 text-lg font-bold text-loop-deep font-mono focus:outline-none focus:ring-2 focus:ring-loop/30" />
           </div>
         </div>
 
@@ -1272,16 +1285,24 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
           <p className="text-sm font-semibold text-text-dim uppercase tracking-wider mb-3">{bank.name} costs you</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-text-muted">FX markup ({bank.markup}% × {formatCurrency(intlVolume)})</span>
+              <span className="text-text-muted">FX markup (2% × {formatCurrency(intlVolume)})</span>
               <span className="font-semibold text-danger">{formatCurrency(bankFxCost)}/mo</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Wire fees ({wireCount} × $45)</span>
-              <span className="font-semibold text-danger">{formatCurrency(bankWireCost)}/mo</span>
-            </div>
+            {outgoingWires > 0 && (
+              <div className="flex justify-between">
+                <span className="text-text-muted">Outgoing wire fees ({outgoingWires} × $45)</span>
+                <span className="font-semibold text-danger">{formatCurrency(bankOutgoingWireCost)}/mo</span>
+              </div>
+            )}
+            {incomingWires > 0 && (
+              <div className="flex justify-between">
+                <span className="text-text-muted">Incoming wire fees ({incomingWires} × $20)</span>
+                <span className="font-semibold text-danger">{formatCurrency(bankIncomingWireCost)}/mo</span>
+              </div>
+            )}
             {ccFlag && ccForeignSpend > 0 && (
               <div className="flex justify-between">
-                <span className="text-text-muted">CC foreign txn fee ({(bank.markup + 2.5).toFixed(1)}% × {formatCurrency(ccForeignSpend)})</span>
+                <span className="text-text-muted">CC foreign txn fee (5% × {formatCurrency(ccForeignSpend)})</span>
                 <span className="font-semibold text-danger">{formatCurrency(ccFxMarkup)}/mo</span>
               </div>
             )}
@@ -1410,17 +1431,21 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
                 findings.push({
                   category: "fx_markup",
                   date: null,
-                  description: `FX markup of ${bank.markup}% on ${formatCurrency(intlVolume)}/mo international volume`,
+                  description: `FX markup of 2% on ${formatCurrency(intlVolume)}/mo international volume`,
                   amount: bankFxCost,
                   loopAlternative: `Loop Basic: ${loopPlans[0].fxRate}% FX rate`,
                   savingsPerOccurrence: bankFxCost - (intlVolume * (loopPlans[0].fxRate / 100)),
                 });
               }
               if (bankWireCost > 0) {
+                const wireDesc = [
+                  outgoingWires > 0 ? `${outgoingWires} outgoing × $45` : null,
+                  incomingWires > 0 ? `${incomingWires} incoming × $20` : null,
+                ].filter(Boolean).join(", ");
                 findings.push({
                   category: "wire_fee",
                   date: null,
-                  description: `${wireCount} international wire${wireCount !== 1 ? "s" : ""} × $45 each`,
+                  description: `International wire fees: ${wireDesc}`,
                   amount: bankWireCost,
                   loopAlternative: "Loop: $0 wire fees",
                   savingsPerOccurrence: bankWireCost,
@@ -1434,7 +1459,7 @@ function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {
                 recommendations: [
                   {
                     title: "Switch to Loop",
-                    description: `Based on your monthly volume of ${formatCurrency(intlVolume)} in international transactions and ${wireCount} wire${wireCount !== 1 ? "s" : ""}, the ${bestPlan.name} plan offers the best value.`,
+                    description: `Based on your monthly volume of ${formatCurrency(intlVolume)} in international transactions and ${outgoingWires + incomingWires} wire${(outgoingWires + incomingWires) !== 1 ? "s" : ""}, the ${bestPlan.name} plan offers the best value.`,
                     estimatedAnnualSavings: bestPlan.annualSavings,
                     priority: "high" as const,
                   },

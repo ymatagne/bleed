@@ -216,6 +216,7 @@ export default function SendCalculator() {
     : null;
   const worstBank = results.find((r) => r.provider.kind === "bank");
   const bestLoop = results.find((r) => r.provider.isLoop);
+  const costSavings = bestLoop && worstBank ? worstBank.totalCost - bestLoop.totalCost : 0;
   const savings = bestLoop && worstBank ? bestLoop.recipientGets - worstBank.recipientGets : 0;
 
   const currencyFlag = FLAG_MAP[currency] || "";
@@ -315,16 +316,16 @@ export default function SendCalculator() {
                 ) : results.length > 0 ? (
                   <>
                     {/* Savings banner */}
-                    {savings > 0 && bestLoop && (
+                    {costSavings > 0 && bestLoop && worstBank && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mb-4 p-3 rounded-xl bg-[#C4F6C6]/40 border border-[#C4F6C6] text-center"
                       >
                         <span className="text-sm font-semibold text-[#004639]">
-                          Your recipient gets{" "}
-                          <span className="text-lg font-bold">{currencyFlag} {formatNum(savings)} {currency}</span>{" "}
-                          MORE with {bestLoop.provider.name}
+                          You save{" "}
+                          <span className="text-lg font-bold">${formatNum(costSavings)} CAD</span>{" "}
+                          with {bestLoop.provider.name} vs {worstBank.provider.name}
                         </span>
                       </motion.div>
                     )}

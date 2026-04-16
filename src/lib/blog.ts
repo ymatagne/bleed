@@ -10,12 +10,39 @@ const BLOG_DIR = path.join(process.cwd(), "content/blog");
 export interface BlogPost {
   slug: string;
   title: string;
+  seoTitle?: string;
   description: string;
+  keywords: string[];
   date: string;
   author: string;
+  schemaJsonLd?: string;
   readTime: number;
   content: string;
   htmlContent?: string;
+}
+
+function normalizeSchemaJsonLd(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeKeywords(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((k): k is string => typeof k === "string");
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+  }
+  return [];
 }
 
 function calculateReadTime(content: string): number {
@@ -32,9 +59,12 @@ export function getAllPosts(): BlogPost[] {
     return {
       slug,
       title: data.title ?? slug,
+      seoTitle: typeof data.seoTitle === "string" ? data.seoTitle : undefined,
       description: data.description ?? "",
+      keywords: normalizeKeywords(data.keywords),
       date: data.date ? new Date(data.date).toISOString().split("T")[0] : "",
       author: data.author ?? "Loop Financial",
+      schemaJsonLd: normalizeSchemaJsonLd(data.schemaJsonLd),
       readTime: calculateReadTime(content),
       content,
     };
@@ -49,9 +79,12 @@ export async function getPostBySlug(slug: string): Promise<BlogPost & { htmlCont
   return {
     slug,
     title: data.title ?? slug,
+    seoTitle: typeof data.seoTitle === "string" ? data.seoTitle : undefined,
     description: data.description ?? "",
+    keywords: normalizeKeywords(data.keywords),
     date: data.date ? new Date(data.date).toISOString().split("T")[0] : "",
     author: data.author ?? "Loop Financial",
+    schemaJsonLd: normalizeSchemaJsonLd(data.schemaJsonLd),
     readTime: calculateReadTime(content),
     content,
     htmlContent: result.toString(),

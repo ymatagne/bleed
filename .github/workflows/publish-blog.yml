@@ -1,0 +1,73 @@
+name: Publish Blog Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "Blog post title (used for commit message and run summary)"
+        required: true
+        type: string
+      slug:
+        description: "URL slug (lowercase, hyphens, no special chars) — becomes the filename"
+        required: true
+        type: string
+      description:
+        description: "Meta description (used in summary / kept for observability)"
+        required: true
+        type: string
+      keywords:
+        description: 'JSON array of keywords (kept for observability), e.g. ["rbc fx fees"]'
+        required: true
+        type: string
+      content:
+        description: "Full markdown file including YAML frontmatter (written verbatim to content/blog/{slug}.md)"
+        required: true
+        type: string
+      date:
+        description: "Publish date (YYYY-MM-DD). Optional — for logging only; authoritative date lives in the content frontmatter."
+        required: false
+        type: string
+      correlation_id:
+        description: "Correlation ID from the upstream platform. Echoed into run-name for traceability."
+        required: false
+        type: string
+
+run-name: "Publish blog ${{ inputs.slug }} (${{ inputs.correlation_id }})"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate inputs and write markdown file
+        env:
+          POST_TITLE: ${{ inputs.title }}
+          POST_SLUG: ${{ inputs.slug }}
+          POST_DESCRIPTION: ${{ inputs.description }}
+          POST_KEYWORDS: ${{ inputs.keywords }}
+          POST_CONTENT: ${{ inputs.content }}
+          POST_DATE: ${{ inputs.date }}
+          POST_CORRELATION_ID: ${{ inputs.correlation_id }}
+        run: node scripts/publish-blog.js
+
+      - name: Commit and push
+        env:
+          POST_TITLE: ${{ inputs.title }}
+          POST_SLUG: ${{ inputs.slug }}
+          POST_CORRELATION_ID: ${{ inputs.correlation_id }}
+        run: |
+          git config user.name "loop-geo-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add content/blog/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "content: publish $POST_SLUG" -m "Title: $POST_TITLE" -m "Correlation-Id: $POST_CORRELATION_ID"
+          git push

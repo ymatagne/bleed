@@ -15,11 +15,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug } = await params;
   try {
     const post = await getPostBySlug(slug);
+    const headTitle = post.seoTitle ?? post.title;
     return {
-      title: post.title,
+      title: headTitle,
       description: post.description,
+      keywords: post.keywords.length > 0 ? post.keywords : undefined,
       openGraph: {
-        title: post.title,
+        title: headTitle,
         description: post.description,
         type: "article",
         publishedTime: post.date,
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       },
       twitter: {
         card: "summary_large_image",
-        title: post.title,
+        title: headTitle,
         description: post.description,
       },
     };
@@ -47,6 +49,12 @@ export default async function BlogPost({ params }: { params: Params }) {
 
   return (
     <>
+      {post.schemaJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: post.schemaJsonLd }}
+        />
+      )}
       <Nav />
       <main className="min-h-screen bg-white pt-20">
         <article className="max-w-3xl mx-auto px-6 py-16">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { LOOP_FX_RATES } from "@/lib/loop-pricing";
 
 interface Bank {
   slug: string;
@@ -115,9 +116,9 @@ export default function BankPageClient({
           {/* Loop plans comparison */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { name: "Basic", fee: 0, rate: 0.5 },
-              { name: "Plus", fee: 79, rate: 0.25 },
-              { name: "Power", fee: 299, rate: 0.10 },
+              { name: "Basic", fee: 0, rate: LOOP_FX_RATES.BASIC },
+              { name: "Plus", fee: 79, rate: LOOP_FX_RATES.PLUS },
+              { name: "Power", fee: 299, rate: LOOP_FX_RATES.POWER },
             ].map((plan) => {
               const loopYearly = (amount * (plan.rate / 100) + plan.fee) * 12;
               return (

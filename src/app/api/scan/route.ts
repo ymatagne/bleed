@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LOOP_FX_RATES } from "@/lib/loop-pricing";
 import { getMidMarketRates, getHistoricalRatesForRange } from "@/lib/fx-rates";
 
 const MISTRAL_OCR_API = "https://api.mistral.ai/v1/ocr";
@@ -188,9 +189,9 @@ IMPORTANT: Even if a statement looks "clean" with few fees, dig deeper:
 - The ABSENCE of rewards (Loop gives 1-2x points on card spend)
 
 Loop offers 3 plans:
-1. **Basic** — $0/mo, 0.50% FX on conversions, 0% FX on cards, free USD/EUR/GBP accounts, free international payments, unlimited team members, 20 virtual cards, 1x points on CAD spend
-2. **Plus** — $79/mo, 0.25% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, unlimited virtual cards, 10 free physical cards, instant deposits
-3. **Power** — $299/mo, 0.10% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, 50 free physical cards, dedicated concierge, custom rewards
+1. **Basic** — $0/mo, ${LOOP_FX_RATES.BASIC.toFixed(2)}% FX on conversions, 0% FX on cards, free USD/EUR/GBP accounts, free international payments, unlimited team members, 20 virtual cards, 1x points on CAD spend
+2. **Plus** — $79/mo, ${LOOP_FX_RATES.PLUS.toFixed(2)}% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, unlimited virtual cards, 10 free physical cards, instant deposits
+3. **Power** — $299/mo, ${LOOP_FX_RATES.POWER.toFixed(2)}% FX on conversions, 0% FX on cards, 2x points on CAD spend + 1x on USD/EUR/GBP, 50 free physical cards, dedicated concierge, custom rewards
 
 All plans include:
 - Account fees: Basic $0/mo, Plus $79/mo, Power $299/mo
@@ -233,8 +234,8 @@ Analyze and return ONLY this JSON (no markdown fences):
       "date": "YYYY-MM-DD or null",
       "description": "what we found — for payment_fx and card_fx, format each currency on its own line like: 'USD: $X,XXX × Y.YY% markup = $ZZZ\\nEUR: €X,XXX × Y.YY% markup = $ZZZ\\nTotal markup: $ZZZ'. Do NOT include 'Calculations: N' or similar meta-text.",
       "amount": number (the total fee/cost the bank charged),
-      "loopAlternative": "what Loop offers instead — MUST include specific dollar amounts, e.g. 'Loop Basic (0.5% FX): $X,XXX × 0.5% = $YY vs your bank's $ZZZ'. Never say 'Dramatically lower' without numbers.",
-      "savingsPerOccurrence": number (the ACTUAL savings = amount minus what the same activity would cost on Loop Basic. For payment_fx/card_fx: amount minus total_fx_volume × 0.5%. For wire_fee: amount minus $0. NOT the same as amount unless Loop cost is truly $0.)
+      "loopAlternative": "what Loop offers instead — MUST include specific dollar amounts, e.g. 'Loop Basic (${LOOP_FX_RATES.BASIC.toFixed(2)}% FX): $X,XXX × ${LOOP_FX_RATES.BASIC.toFixed(2)}% = $YY vs your bank's $ZZZ'. Never say 'Dramatically lower' without numbers.",
+      "savingsPerOccurrence": number (the ACTUAL savings = amount minus what the same activity would cost on Loop Basic. For payment_fx/card_fx: amount minus total_fx_volume × ${LOOP_FX_RATES.BASIC.toFixed(2)}%. For wire_fee: amount minus $0. NOT the same as amount unless Loop cost is truly $0.)
     }
   ],
   
@@ -262,8 +263,8 @@ Analyze and return ONLY this JSON (no markdown fences):
     {
       "plan": "Basic",
       "monthlyFee": 0,
-      "fxRate": 0.5,
-      "annualCostOnPlan": number (annual FX cost at 0.5% + $0/mo fee),
+      "fxRate": ${LOOP_FX_RATES.BASIC},
+      "annualCostOnPlan": number (annual FX cost at ${LOOP_FX_RATES.BASIC.toFixed(2)}% + $0/mo fee),
       "annualSavingsVsBank": number (bank annualProjection minus annualCostOnPlan),
       "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
@@ -271,8 +272,8 @@ Analyze and return ONLY this JSON (no markdown fences):
     {
       "plan": "Plus",
       "monthlyFee": 79,
-      "fxRate": 0.25,
-      "annualCostOnPlan": number (annual FX cost at 0.25% + $79×12 fee),
+      "fxRate": ${LOOP_FX_RATES.PLUS},
+      "annualCostOnPlan": number (annual FX cost at ${LOOP_FX_RATES.PLUS.toFixed(2)}% + $79×12 fee),
       "annualSavingsVsBank": number,
       "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
@@ -280,8 +281,8 @@ Analyze and return ONLY this JSON (no markdown fences):
     {
       "plan": "Power",
       "monthlyFee": 299,
-      "fxRate": 0.10,
-      "annualCostOnPlan": number (annual FX cost at 0.10% + $299×12 fee),
+      "fxRate": ${LOOP_FX_RATES.POWER},
+      "annualCostOnPlan": number (annual FX cost at ${LOOP_FX_RATES.POWER.toFixed(2)}% + $299×12 fee),
       "annualSavingsVsBank": number,
       "savingsBreakdown": { "fxSavings": number, "wireSavings": number, "accountFeeSavings": number, "otherSavings": number },
       "recommended": boolean
@@ -320,7 +321,7 @@ CRITICAL GROUPING RULES — FOLLOW EXACTLY:
 MATH RULES - FOLLOW EXACTLY:
 - FX markup calculation: If bank rate is 1.3850 and mid-market is 1.3567, markup = (1.3850 - 1.3567) / 1.3567 = 2.09%. Cost on $10,000 USD = $10,000 × 2.09% = $209 CAD
 - Annual projection: If statement covers 1 month, multiply by 12. If 3 months, multiply by 4. Be precise about the statement period.
-- Loop savings: Calculate EXACTLY using each plan's rate. Basic savings = bank FX cost - (volume × 0.5%) - $0/mo fee. Plus savings = bank FX cost - (volume × 0.25%) - $79×months. Power savings = bank FX cost - (volume × 0.10%) - $299×months.
+- Loop savings: Calculate EXACTLY using each plan's rate. Basic savings = bank FX cost - (volume × ${LOOP_FX_RATES.BASIC.toFixed(2)}%) - $0/mo fee. Plus savings = bank FX cost - (volume × ${LOOP_FX_RATES.PLUS.toFixed(2)}%) - $79×months. Power savings = bank FX cost - (volume × ${LOOP_FX_RATES.POWER.toFixed(2)}%) - $299×months.
 - Wire savings: Count wires × average fee ($45). Loop = $0 for wires.
 - Show your work in the description fields so users can verify the math.
 - CRITICAL: All JSON number fields MUST be plain numbers (e.g. 6468.36), NOT math expressions (e.g. "596 * 12 - 687 = 6468.36"). Do your math, then put ONLY the final result as the value.
@@ -401,9 +402,9 @@ ${isMultiple ? "- Look for PATTERNS across statements (recurring fees, growing c
         annualSavings: analysis.summary?.annualSavings || 0,
       },
       planComparison: analysis.planComparison || [
-        { plan: "Basic", monthlyFee: 0, fxRate: 0.5, annualCostOnPlan: analysis.summary?.loopAnnualCost || 0, annualSavingsVsBank: analysis.summary?.annualSavings || 0, recommended: true },
-        { plan: "Plus", monthlyFee: 79, fxRate: 0.25, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
-        { plan: "Power", monthlyFee: 299, fxRate: 0.10, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
+        { plan: "Basic", monthlyFee: 0, fxRate: LOOP_FX_RATES.BASIC, annualCostOnPlan: analysis.summary?.loopAnnualCost || 0, annualSavingsVsBank: analysis.summary?.annualSavings || 0, recommended: true },
+        { plan: "Plus", monthlyFee: 79, fxRate: LOOP_FX_RATES.PLUS, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
+        { plan: "Power", monthlyFee: 299, fxRate: LOOP_FX_RATES.POWER, annualCostOnPlan: 0, annualSavingsVsBank: 0, recommended: false },
       ],
       ...(failedFiles.length > 0 ? { failedFiles } : {}),
       ...(analysis.creditCardData ? {

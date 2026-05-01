@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSignupModal } from "./SignupModalProvider";
+import { LOOP_FX_MARKUPS } from "@/lib/loop-pricing";
 
 /* ── Currency metadata ── */
 
@@ -88,9 +89,9 @@ const FINTECHS: Provider[] = [
 ];
 
 const LOOP_PLANS: Provider[] = [
-  { name: "Loop Basic", markup: 0.005, wireFee: 0, isLoop: true, kind: "loop", planNote: "Free" },
-  { name: "Loop Plus", markup: 0.0025, wireFee: 0, isLoop: true, kind: "loop", planNote: "$79/mo" },
-  { name: "Loop Power", markup: 0.001, wireFee: 0, isLoop: true, kind: "loop", planNote: "$299/mo" },
+  { name: "Loop Basic", markup: LOOP_FX_MARKUPS.BASIC, wireFee: 0, isLoop: true, kind: "loop", planNote: "Free" },
+  { name: "Loop Plus", markup: LOOP_FX_MARKUPS.PLUS, wireFee: 0, isLoop: true, kind: "loop", planNote: "$79/mo" },
+  { name: "Loop Power", markup: LOOP_FX_MARKUPS.POWER, wireFee: 0, isLoop: true, kind: "loop", planNote: "$299/mo" },
 ];
 
 const ALL_PROVIDERS = [...BANKS, ...FINTECHS, ...LOOP_PLANS];

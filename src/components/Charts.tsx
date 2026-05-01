@@ -3,6 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { formatCurrency } from "@/lib/utils";
+import { LOOP_FX_RATES } from "@/lib/loop-pricing";
 
 interface PlanComparison {
   plan: string;
@@ -238,7 +239,7 @@ function DonutChart({ data }: { data: ChartData }) {
 
 export default function ProjectionCharts({ summary, plans }: { summary: ChartData; plans?: PlanComparison[] }) {
   const defaultPlans: PlanComparison[] = plans && plans.length > 0 ? plans : [
-    { plan: "Basic", monthlyFee: 0, fxRate: 0.5, annualCostOnPlan: summary.loopAnnualCost, annualSavingsVsBank: summary.annualSavings, recommended: true },
+    { plan: "Basic", monthlyFee: 0, fxRate: LOOP_FX_RATES.BASIC, annualCostOnPlan: summary.loopAnnualCost, annualSavingsVsBank: summary.annualSavings, recommended: true },
   ];
 
   return (

@@ -10,6 +10,7 @@ import AnimatedNumber from "./AnimatedNumber";
 import ProjectionCharts from "./Charts";
 import { useSignupModal } from "./SignupModalProvider";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { LOOP_FX_RATES } from "@/lib/loop-pricing";
 
 interface Finding {
   category: string;
@@ -695,7 +696,7 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
     }
     if (category === "fx_markup" || category === "payment_fx" || category === "card_fx") {
       // Show the Loop alternative text directly — AI now provides specific numbers
-      return { type: "text" as const, text: a || "Loop Basic: 0.5% FX rate" };
+      return { type: "text" as const, text: a || `Loop Basic: ${LOOP_FX_RATES.BASIC}% FX rate` };
     }
     return { type: "text" as const, text: a };
   };
@@ -728,8 +729,8 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
             <p className="text-xs text-green-600 mt-0.5">
               {finding.category === "account_fee" && "Loop Basic: $0/mo"}
               {finding.category === "wire_fee" && "Loop: $0 wire fees"}
-              {finding.category === "fx_markup" && "Loop Basic: 0.5% FX rate"}
-              {finding.category === "payment_fx" && "Loop Basic: 0.5% FX on payments"}
+              {finding.category === "fx_markup" && `Loop Basic: ${LOOP_FX_RATES.BASIC}% FX rate`}
+              {finding.category === "payment_fx" && `Loop Basic: ${LOOP_FX_RATES.BASIC}% FX on payments`}
               {finding.category === "card_fx" && "Loop: 0% FX on card spend"}
               {finding.category === "etransfer_fee" && "Loop: Free unlimited e-Transfers"}
               {finding.category === "card_fee" && "Loop: No card fees"}
@@ -1201,9 +1202,9 @@ function AuditReport({ data, onReset, ccFlag }: { data: AuditResult; onReset: ()
 }
 
 const loopPlans = [
-  { name: "Basic", monthlyFee: 0, fxRate: 0.5, features: ["Free USD/EUR/GBP accounts", "20 virtual cards", "1x points on CAD"] },
-  { name: "Plus", monthlyFee: 79, fxRate: 0.25, features: ["Unlimited virtual cards", "10 free physical cards", "2x CAD / 1x foreign points", "Instant deposits"] },
-  { name: "Power", monthlyFee: 299, fxRate: 0.10, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x CAD / 1x foreign points"] },
+  { name: "Basic", monthlyFee: 0, fxRate: LOOP_FX_RATES.BASIC, features: ["Free USD/EUR/GBP accounts", "20 virtual cards", "1x points on CAD"] },
+  { name: "Plus", monthlyFee: 79, fxRate: LOOP_FX_RATES.PLUS, features: ["Unlimited virtual cards", "10 free physical cards", "2x CAD / 1x foreign points", "Instant deposits"] },
+  { name: "Power", monthlyFee: 299, fxRate: LOOP_FX_RATES.POWER, features: ["50 free physical cards", "Dedicated concierge", "Custom rewards", "2x CAD / 1x foreign points"] },
 ];
 
 function CalculatorTab({ ccFlag }: { ccFlag: boolean }) {

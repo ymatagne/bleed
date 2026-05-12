@@ -7,9 +7,10 @@ import { useEffect } from "react";
 interface SignupModalProps {
   open: boolean;
   onClose: () => void;
+  signupUrl: string;
 }
 
-export default function SignupModal({ open, onClose }: SignupModalProps) {
+export default function SignupModal({ open, onClose, signupUrl }: SignupModalProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -62,7 +63,7 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
             {/* Iframe */}
             <div className="flex-1 relative">
               <iframe
-                src="https://go.bankonloop.com/signup"
+                src={signupUrl}
                 className="w-full h-full border-0"
                 allow="clipboard-write"
                 title="Loop Signup"

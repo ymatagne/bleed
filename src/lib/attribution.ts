@@ -2,6 +2,7 @@
 
 const SIGNUP_BASE_URL = "https://go.bankonloop.com/signup";
 const STORAGE_KEY = "bleed_attribution_params";
+const MAX_PARAM_VALUE_LENGTH = 500;
 
 const ATTRIBUTION_PARAM_NAMES = [
   "utm_source",
@@ -22,8 +23,17 @@ const ATTRIBUTION_PARAM_NAMES = [
   "li_fat_id",
 ] as const;
 
-function isAttributionParam(name: string) {
-  return ATTRIBUTION_PARAM_NAMES.includes(name as (typeof ATTRIBUTION_PARAM_NAMES)[number]);
+type AttributionParamName = (typeof ATTRIBUTION_PARAM_NAMES)[number];
+
+function isAttributionParam(name: string): name is AttributionParamName {
+  return ATTRIBUTION_PARAM_NAMES.includes(name as AttributionParamName);
+}
+
+function sanitizeParamValue(value: string) {
+  return value
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, MAX_PARAM_VALUE_LENGTH);
 }
 
 function readStoredParams(): URLSearchParams {
@@ -46,43 +56,64 @@ function writeStoredParams(params: URLSearchParams) {
   }
 }
 
+function collectAttributionParams(params: URLSearchParams) {
+  const attributionParams = new URLSearchParams();
+
+  params.forEach((value, key) => {
+    if (!isAttributionParam(key)) return;
+
+    const sanitizedValue = sanitizeParamValue(value);
+    if (sanitizedValue) attributionParams.set(key, sanitizedValue);
+  });
+
+  return attributionParams;
+}
+
+function mergeParams(target: URLSearchParams, source: URLSearchParams) {
+  source.forEach((value, key) => target.set(key, value));
+}
+
+function createSignupUrl() {
+  const signupUrl = new URL(SIGNUP_BASE_URL);
+
+  if (signupUrl.protocol !== "https:" || signupUrl.hostname !== "go.bankonloop.com") {
+    throw new Error("Invalid signup URL");
+  }
+
+  return signupUrl;
+}
+
 export function persistAttributionParams() {
   if (typeof window === "undefined") return;
 
-  const currentParams = new URLSearchParams(window.location.search);
+  const currentParams = collectAttributionParams(new URLSearchParams(window.location.search));
+  if (currentParams.size === 0) return;
+
   const storedParams = readStoredParams();
-  let changed = false;
-
-  currentParams.forEach((value, key) => {
-    if (!isAttributionParam(key) || !value) return;
-    storedParams.set(key, value);
-    changed = true;
-  });
-
-  if (changed) writeStoredParams(storedParams);
+  mergeParams(storedParams, currentParams);
+  writeStoredParams(storedParams);
 }
 
 export function buildSignupUrl() {
-  const signupUrl = new URL(SIGNUP_BASE_URL);
+  try {
+    const signupUrl = createSignupUrl();
 
-  if (typeof window === "undefined") return signupUrl.toString();
+    if (typeof window === "undefined") return signupUrl.toString();
 
-  const params = signupUrl.searchParams;
-  const storedParams = readStoredParams();
-  const currentParams = new URLSearchParams(window.location.search);
+    const params = signupUrl.searchParams;
 
-  // Stored attribution keeps UTMs available after the user navigates around Bleed.
-  storedParams.forEach((value, key) => {
-    if (isAttributionParam(key) && value) params.set(key, value);
-  });
+    // Stored attribution keeps UTMs available after the user navigates around Bleed.
+    mergeParams(params, collectAttributionParams(readStoredParams()));
 
-  // Current URL wins, so clicking the CTA on a fresh UTM URL passes those exact values.
-  currentParams.forEach((value, key) => {
-    if (isAttributionParam(key) && value) params.set(key, value);
-  });
+    // Current URL wins, so clicking the CTA on a fresh UTM URL passes those exact values.
+    mergeParams(params, collectAttributionParams(new URLSearchParams(window.location.search)));
 
-  params.set("referrer", window.location.href);
-  params.set("source", "bleed");
+    const referrer = sanitizeParamValue(window.location.href);
+    if (referrer) params.set("referrer", referrer);
+    params.set("source", "bleed");
 
-  return signupUrl.toString();
+    return signupUrl.toString();
+  } catch {
+    return SIGNUP_BASE_URL;
+  }
 }
